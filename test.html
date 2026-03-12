@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>reCAPTCHA Debug Test</title>
+</head>
+<body>
+    <h2>reCAPTCHA Debug Test</h2>
+    
+    <!-- Test 1: reCAPTCHA v2 Implementation -->
+    <div style="border: 2px solid #blue; padding: 20px; margin: 20px 0;">
+        <h3>Test 1: reCAPTCHA v2 (Checkbox)</h3>
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+        <form>
+            <div class="g-recaptcha" data-sitekey="6LfjmtMrAAAAAMWl_Q97U09CPjqDMEpHRvL44otV"></div>
+            <button type="submit">Test v2</button>
+        </form>
+        <p><strong>Expected:</strong> Should show checkbox if key is v2, or "Invalid key type" if key is v3</p>
+    </div>
+    
+    <!-- Test 2: reCAPTCHA v3 Implementation -->
+    <div style="border: 2px solid #green; padding: 20px; margin: 20px 0;">
+        <h3>Test 2: reCAPTCHA v3 (Invisible)</h3>
+        <script src="https://www.google.com/recaptcha/api.js?render=6LfjmtMrAAAAAMWl_Q97U09CPjqDMEpHRvL44otV"></script>
+        <form id="v3-form">
+            <input type="text" placeholder="Name" required>
+            <button type="submit" id="v3-submit">Test v3</button>
+        </form>
+        <div id="v3-result" style="color: green; margin-top: 10px;"></div>
+        <p><strong>Expected:</strong> Should work silently if key is v3, or show error in console if key is v2</p>
+    </div>
+
+    <script>
+        // v3 Test
+        document.getElementById('v3-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.ready(function() {
+                    grecaptcha.execute('6LfjmtMrAAAAAMWl_Q97U09CPjqDMEpHRvL44otV', {action: 'test'})
+                        .then(function(token) {
+                            document.getElementById('v3-result').innerHTML = 
+                                '<strong>? v3 SUCCESS!</strong> Token received: ' + token.substring(0, 20) + '...';
+                        })
+                        .catch(function(error) {
+                            document.getElementById('v3-result').innerHTML = 
+                                '<strong>? v3 ERROR:</strong> ' + error;
+                        });
+                });
+            } else {
+                document.getElementById('v3-result').innerHTML = 
+                    '<strong>? ERROR:</strong> reCAPTCHA not loaded';
+            }
+        });
+    </script>
+    
+    <div style="background: #fff3cd; padding: 20px; margin: 20px 0;">
+        <h3>?? Debugging Results:</h3>
+        <ul>
+            <li><strong>Test 1 shows checkbox:</strong> Your key is v2 ? Use v2 code</li>
+            <li><strong>Test 1 shows "Invalid key type":</strong> Your key is v3 ? Use v3 code</li>
+            <li><strong>Test 2 works (shows success):</strong> Your key is v3 and working</li>
+            <li><strong>Both tests fail:</strong> Domain not registered or keys incorrect</li>
+        </ul>
+        
+        <p><strong>Also check browser console (F12) for any JavaScript errors!</strong></p>
+    </div>
+</body>
+</html>

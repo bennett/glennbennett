@@ -1,0 +1,29 @@
+/* ----------------------------------------------------------------
+	Custom CSS
+
+	Add all your Custom Styled CSS here for New Styles or
+	Overwriting Default Theme Styles for Better Handling Updates
+-----------------------------------------------------------------*/
+
+
+.testimonial{
+
+    background-color: #000;
+    color: #888;
+    border: 1px solid #444;
+    font-size: 14px;
+}
+
+.testimonial p{
+  margin-bottom: 0px;
+}
+
+.notes p
+{
+    color: #000;
+}
+
+.gcal
+{
+    text-align: left;
+}

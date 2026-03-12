@@ -1,0 +1,804 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+class Site extends CI_Controller {
+
+	/**
+	 * Index Page for this controller.
+	 *
+	 * Maps to the following URL
+	 * 		http://example.com/index.php/welcome
+	 *	- or -
+	 * 		http://example.com/index.php/welcome/index
+	 *	- or -
+	 * Since this controller is set as the default controller in
+	 * config/routes.php, it's displayed at http://example.com/
+	 *
+	 * So any other public methods not prefixed with an underscore will
+	 * map to /index.php/welcome/<method_name>
+	 * @see https://codeigniter.com/user_guide/general/urls.html
+	 */
+
+	public function __construct()
+	{
+		parent::__construct();
+
+		$this->load->database();
+        $this->load->library('MP3File');
+        $this->load->config('globals');
+        $this->load->library('date_diff');
+        $this->load->library('remote_data');
+        $this->load->library('gcal_gig_reader');
+//		$this->load->helper('url');
+
+//		$this->load->library('grocery_CRUD');
+
+        $cals = [
+            [
+                'url'  => 'https://calendar.google.com/calendar/ical/c_8oqt9e7bms1sefskr0fl01r7tg%40group.calendar.google.com/public/basic.ics',    
+                'name' => 'perform',
+            ],
+            [
+                'url'  => 'https://calendar.google.com/calendar/ical/c_60458ee36250676533587bd3a2b92e3bedc52796d6a2b5b76fca9bd60ccba33d%40group.calendar.google.com/public/basic.ics',    
+                'name' => 'canceled',
+            ]
+        ];
+
+        $this->gcal_gig_reader->set_cals($cals);
+	}     
+     
+     
+	public function index()
+	{
+        $data = $this->build_data();
+        $cal = '';
+        /* Not working
+        $remote_url = 'http://glennbennett.com/gcal/gcal-upcoming.php';
+        $cal = $this->remote_data->fetch_data($remote_url);
+//        $cal = file_get_contents('http://glennbennett.com/gcal/gcal-upcoming.php');
+        */
+//        echo getcwd();
+        
+        ob_start();
+        include FCPATH . 'gcal/gcal-upcoming.php';
+        $cal = ob_get_clean();        
+        
+        $data['gcal'] = $cal;
+
+        // Structured event data for hero section
+        $start = time();
+        $end = $start + (14 * 86400);
+        $events = $this->gcal_gig_reader->get_events($start, $end);
+        $hero_events = [];
+        if (!empty($events)) {
+            foreach ($events as $evt) {
+                if (!empty($evt['status']) && stripos($evt['status'], 'Cancel') !== false) continue;
+                if ($evt['start_date'] < time()) continue;
+                $hero_events[] = $evt;
+                if (count($hero_events) >= 2) break;
+            }
+        }
+        $data['hero_events'] = $hero_events;
+
+		$this->load->view('home', $data);
+	}
+    
+    public function home()
+	{
+        $data = $this->build_data(7);
+        
+        $cal = file_get_contents('https://glennbennett.com/gcal/gcal-upcoming.php');
+        $data['gcal'] = $cal;       
+		$this->load->view('home-test', $data);
+	}
+    
+
+    public function song($song_id)
+    {
+
+        $featured = $this->songs_model->get_song($song_id);
+
+        $data = $this->build_data($featured);
+               
+		$this->load->view('home', $data);
+        
+    }
+    
+    public function captcha()
+	{
+        $data['title'] = "Mailing List";
+        $data['sub_title'] = "Glenn Bennett Mailing List";
+        $this->layout_view('captcha', $data);
+	}    
+    
+
+    public function fbook()
+    {
+    
+        echo "event_date: ";
+        echo $_GET['event_id'];
+        echo "<br>";
+        echo 'event_date: ';
+        echo $_GET['event_date'];
+        echo "<br>";
+        
+        $event = null;
+        
+        $event_id = $_GET['event_id'];
+        
+        $events = $this->gcal_gig_reader->get_events($_GET['event_date'], $_GET['event_date']   + 86400 );
+//        var_dump($events);
+        
+        foreach($events as $tevent)
+        {
+            if($tevent['UID'] == $event_id)
+            {
+                $event = $tevent;
+                echo "<br>";
+                echo "bingo";
+                echo "<br>";
+            }
+        }
+        
+        if($event != null)
+        {
+            var_dump($event);
+        }
+        
+//        die;    
+
+//        echo "Bingo:";
+//        echo $_GET['a'];
+//        die;
+        date_default_timezone_set('America/Los_Angeles');
+    
+        $a = "temp";
+        
+        $start_date = $event['start_date'];
+        $end_date = $event['end_date'];
+        $summary = $event['summary'];
+        $description = $event['description'];
+        $location = $event['location'];
+        
+         //$week_day = "Monday";
+        $week_day = date( "l", $start_date) ;
+        //$date = "Monday - July 11, 2022";
+        $date = date( "l - F d", $start_date );
+        //$time = "5:30 pm - 8:00 pm";
+        $time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
+        
+        $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+
+        $today = date( "Y-m-d");
+        $event_day = date( "Y-m-d", $start_date);
+        
+        $data['a'] = $a;
+        $data['actual_link'] = $actual_link;
+        $data['summary'] = $summary;
+        $data['description'] = $description;
+        $data['date'] = $date;
+        $data['time'] = $time;
+        $data['location'] = $location;
+        
+        $data['title'] = "$summary";
+        $data['sub_title'] = "$date - $time";
+        $this->date_diff->days_diff($today, $event_day);
+        $data['date_diff'] = $this->date_diff->days_diff_str( $today, $event_day );
+        
+        $data['og'] = $this->load->view("partials/og.php", $data, true);
+        
+        $this->layout_view('fb', $data);
+    }
+
+    
+    public function fb()
+    {
+//        echo "Bingo:";
+//        echo $_GET['a'];
+//        die;
+        date_default_timezone_set('America/Los_Angeles');
+        if(isset($_GET['a']) )
+        {
+            $a = $_GET['a'];
+ 
+            $a = urldecode($a);
+                
+    
+            $json = base64_decode($a);
+            
+            
+            // Check if the decoding was successful
+            if ($json === false) {
+                // Handle the error, the data is not valid base64
+                echo 'The provided string is not valid base64 encoded data.';
+            }
+//            ECHO $json;
+            
+            $values = json_decode($json);
+            
+            
+//            var_dump($values);
+            if($values == null)
+            {
+                redirect('/cal', 'refresh');
+            }
+            
+            
+            foreach ($values as $key => $value)
+            {
+                $$key = $value;
+            }
+            
+            //$week_day = "Monday";
+            $week_day = date( "l", $start_date) ;
+            //$date = "Monday - July 11, 2022";
+            $date = date( "l - F d", $start_date );
+            //$time = "5:30 pm - 8:00 pm";
+            $time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
+            
+            $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
+    
+            $today = date( "Y-m-d");
+            $event_day = date( "Y-m-d", $start_date);
+            
+            $data['a'] = $a;
+            $data['actual_link'] = $actual_link;
+            $data['summary'] = $summary;
+            $data['description'] = $description;
+            $data['date'] = $date;
+            $data['time'] = $time;
+            $data['location'] = $location;
+            
+            $data['title'] = "$summary";
+            $data['sub_title'] = "$date - $time";
+            $this->date_diff->days_diff($today, $event_day);
+            $data['date_diff'] = $this->date_diff->days_diff_str( $today, $event_day );
+            
+            $data['og'] = $this->load->view("partials/og.php", $data, true);
+            
+            $this->layout_view('fb', $data);
+        }
+        else
+        {
+            redirect('/cal', 'refresh');
+        }
+    }
+    
+    
+public function build_data($featured_id = null)
+{
+    // 1. Fetch songs from API
+    $album_data = $this->get_album_data(1);
+    $originals = $album_data['songs'] ?: [];
+    $album_title = $album_data['title'] ?: 'Album';
+    $covers    = $this->get_misc_songs() ?: [];
+
+    // 2. Process "Popular" selection (Randomized from Album 1)
+    $popular = $originals;
+    if (!empty($popular)) {
+        shuffle($popular);
+        $popular = array_slice($popular, 0, 4);
+    }
+    
+    $popular = $this->_fetch_api_data("https://music.glennbennett.com/api/popular?limit=4");
+//    var_dump($popular);
+
+    // 3. Determine Featured Song
+    // If a specific ID was passed, find it; otherwise look for "Find Out For Myself"
+    if ($featured_id && !empty($originals)) {
+        $featured = current(array_filter($originals, function($s) use ($featured_id) {
+            return $s->id == $featured_id;
+        })) ?: $originals[0];
+    } else {
+        // Default featured: "I've Got To Find Out For Myself"
+        $featured = null;
+        if (!empty($originals)) {
+            foreach ($originals as $s) {
+                if (stripos($s->title, "Find Out For Myself") !== false) {
+                    $featured = $s;
+                    break;
+                }
+            }
+            if (!$featured) $featured = $originals[0];
+        }
+    }
+
+    // 4. Handle Quotes from file
+    $new_quotes = [];
+    $quotes_path = FCPATH . "quotes.txt";
+    
+    if (file_exists($quotes_path)) {
+        $quotes_raw = file($quotes_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!empty($quotes_raw)) {
+            shuffle($quotes_raw);
+            $new_quotes = array_slice($quotes_raw, 0, 5); // Get up to 5 random quotes
+        }
+    }
+
+    // 5. Build Final Data Array
+    $data = [
+        'site_title'     => "Glenn Bennett",
+        'site_sub_title' => "Original Music",
+        'album_title'    => $album_title,
+        'originals'      => $originals,
+        'covers'         => $covers,
+        'popular'        => $popular,
+        'featured'       => $featured,
+        'quotes'         => $new_quotes,
+        'audio_url'      => "", // Full URLs provided by API
+        'image_url'      => ""  // Full URLs provided by API
+    ];
+
+    return $data;
+}
+ 
+
+/**
+ * DATA FETCHING LOGIC
+ */
+
+    public function get_album_songs($album_id = 1) {
+        return $this->_fetch_api_data("https://music.glennbennett.com/api/album/" . $album_id);
+    }
+
+    public function get_album_data($album_id = 1) {
+        $url = "https://music.glennbennett.com/api/album/" . $album_id;
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'GlennBennett-WebClient');
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($ch);
+        $decoded = json_decode($response);
+        curl_close($ch);
+
+        $title = '';
+        $songs = [];
+        if ($decoded && isset($decoded->success) && $decoded->success && isset($decoded->album)) {
+            $title = $decoded->album->title ?? '';
+            $raw_songs = $decoded->album->songs ?? [];
+            foreach ($raw_songs as $song) {
+                $song->audio_url = $song->stream_url ?? $song->url ?? '';
+                $song->cover_url = $song->cover_url ?? $song->art ?? '/imgs/logo.png';
+            }
+            $songs = $raw_songs;
+        }
+        return ['title' => $title, 'songs' => $songs];
+    }
+
+    public function get_misc_songs() {
+        return $this->_fetch_api_data("https://music.glennbennett.com/api/misc");
+    }
+
+    private function _fetch_api_data($url) {
+      $ch = curl_init();
+      curl_setopt($ch, CURLOPT_URL, $url);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_USERAGENT, 'GlennBennett-WebClient');
+      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+      
+      $response = curl_exec($ch);
+      $decoded = json_decode($response);
+      curl_close($ch);
+
+      if (!$decoded || !isset($decoded->success) || !$decoded->success) {
+          return [];
+      }
+
+      // NEW LOGIC: Look for 'songs' directly (Popular API) 
+      // OR inside 'album->songs' (Older Album API)
+      if (isset($decoded->songs)) {
+          $raw_songs = $decoded->songs;
+      } elseif (isset($decoded->album->songs)) {
+          $raw_songs = $decoded->album->songs;
+      } else {
+          return [];
+      }
+
+      // Map properties for the view
+      foreach($raw_songs as $song) {
+          $song->audio_url = $song->stream_url ?? $song->url ?? '';
+          $song->cover_url = $song->cover_url ?? $song->art ?? '/imgs/logo.png';
+      }
+
+      return $raw_songs;
+  }
+
+    private function _map_properties($songs) {
+        foreach ($songs as $song) {
+            // Map the music URL
+            // If audio_url is missing, try stream_url or url
+            if (!isset($song->audio_url)) {
+                $song->audio_url = $song->stream_url ?? $song->url ?? '';
+            }
+
+            // Map the cover art
+            if (!isset($song->cover_url)) {
+                $song->cover_url = $song->art ?? $song->cover ?? '/imgs/logo.png';
+            }
+        }
+        return $songs;
+    }
+ 
+    // https://www.youtube.com/@horsewhisperingmusic/playlists
+    // Gigs comes from https://www.youtube.com/@GlennBennettIRL
+    
+    public function vids($set = 0, $page_partial = "")
+    {
+        $playlist_id = 'PL986m4OTTx_y8LzmVoOzxZ3dNuQEHfRbU';
+        $title = 'Music Videos';
+        $sub_title = "All";
+        $vid_title = 'Music Videos';
+        $vid_sub_title = '';
+
+        switch ($set) {
+            case 1:
+                $playlist_id = 'PL986m4OTTx_xEQZrKCnKAkTk0YcVAM9Tw';
+                $sub_title = "Original Songs";
+                break;
+            case 2:
+                $playlist_id = 'PL986m4OTTx_zJzY-NFdn5EsgNr4I31D0L';
+                $sub_title = "Cover Songs";
+                break;
+            case 3:
+                $title = 'My Information';
+                $sub_title = "Performing";
+                $vid_title = 'Samples';
+                $playlist_id = 'PL645bCGj_F2CT_FJX30RmHUjRTjrtVpLO';
+                $vid_sub_title = "Live Performance Videos";
+                break;
+        }
+
+        $now = time();
+        $lock_file_name = FCPATH . "/video_data/" . $playlist_id . ".txt";
+        $frequency = 120 * 60;
+
+        if (is_file($lock_file_name)) {
+            $file_last_modified = filemtime($lock_file_name);
+        } else {
+            $file_last_modified = 0;
+        }
+
+      if (($now - $file_last_modified) > $frequency) {
+          $api_key = 'AIzaSyBLe-U8s9z5zXQ8nJNr2B_PXdDvF9o9oKc';
+          $url = 'https://www.googleapis.com/youtube/v3/playlistItems'
+               . '?part=snippet'
+               . '&maxResults=50'
+               . '&playlistId=' . urlencode($playlist_id)
+               . '&key=' . $api_key;
+
+          $response = @file_get_contents($url);
+          $data_yt  = $response ? json_decode($response) : null;
+          $videos   = ($data_yt && isset($data_yt->items)) ? $data_yt->items : [];
+          if (!empty($videos)) {
+              file_put_contents($lock_file_name, serialize($videos));
+          }
+      } else {
+          $videos = @unserialize(file_get_contents($lock_file_name)) ?: [];
+      }
+
+        $data['videos']       = $videos;
+        $data['title']        = $title;
+        $data['sub_title']    = $sub_title;
+        $data['vid_title']    = $vid_title;
+        $data['vid_sub_title'] = $vid_sub_title;
+        $data['page_partial']  = $page_partial;
+
+        $this->layout_view('vids', $data);
+    }    
+    
+    public function info()
+    {
+        // just go to the old place for now - work on new page
+        $this->samples();
+    }
+    public function samples()
+    {
+//        $this->index(); // just for now
+        $page_partial = $this->load->view('about', '', true);
+        $page_partial .= $this->load->view("page_partials/" . 'gig_info', '', true);
+        
+        $this->vids(3, $page_partial);
+    }
+    
+    public function mlist()
+    {
+        $data['title'] = "Mailing List";
+        $data['sub_title'] = "Glenn Bennett Mailing List";
+        $this->layout_view('mlist', $data);
+    }
+    
+    public function about()
+    {
+        $data['title'] = "About";
+        $data['sub_title'] = "About Glenn Bennett";
+        $this->layout_view('about', $data);
+    }
+
+    public function docs()
+    {
+        $data['title'] = "Docs";
+        $data['sub_title'] = "Site Documentation";
+        $this->layout_view('docs', $data);
+    }
+    
+    public function tip()
+    {
+        $data['title'] = "Tip";
+        $data['sub_title'] = "Glenn Bennett Tip Jar";
+        
+        $return_url = "";
+        
+        if(isset($_GET['link']) )
+        {
+            $return_url = htmlspecialchars($_GET['link']);
+        }
+        
+        
+        $data['back_link'] = $return_url;
+        
+
+        
+//        $this->layout_view('tip', $data);
+
+        $content = $this->load->view('tip', $data, true);
+
+        echo $content;
+    }
+    
+    public function qr()
+    {
+        $data['title'] = "Access";
+        $data['sub_title'] = "Glenn Bennett Access Section";
+        
+        $return_url = "";
+        
+        if(isset($_GET['link']) )
+        {
+            $return_url = htmlspecialchars($_GET['link']);
+        }
+        
+        
+        $data['back_link'] = $return_url;
+        
+ 
+        $navs = [
+            ['url' => '/request/', 'icon' => 'fa-hand-paper', 'text' => 'Request System'],
+            ['url' => '/tip/', 'icon' => 'fa-coffee', 'text' => 'Online Tipping'],
+            ['url' => '/follow/', 'icon' => 'fa-link', 'text' => 'Follow']
+        ];
+        
+        $links = [
+            ['url' => '/', 'icon' => 'fa-hand-paper', 'text' => 'Site Home'],
+            ['url' => '/cal', 'icon' => 'fa-coffee', 'text' => 'Calendar'],
+            ['url' => '/about', 'icon' => 'fa-link', 'text' => 'Contact']
+        ];
+        
+        // Create a new array.
+//        $links = array(); 
+
+            
+        $data['navs'] = $navs;  
+        $data['links'] = $links;        
+        
+//        $this->layout_view('tip', $data);
+
+        $content = $this->load->view('qr', $data, true);
+
+        echo $content;
+    }    
+
+    public function cal()
+    {
+        $data['title'] = "Calendar";
+        $data['sub_title'] = "Glenn Bennett Calendar";
+        
+
+        // Weather - does not give the right data
+        
+        $this->load->library('weather_lib');
+
+        $data['weather_results'] = $this->weather_lib->get_weather();
+        
+//        var_dump($data['weather_results']);
+        
+        // Load the sidebar view
+        $data['last_updated'] = date('g:i a');
+        $data['current_date'] = date('l, F j');
+        
+        
+        
+        $this->layout_view('cal', $data);
+    }
+    
+    public function past()
+    {
+        $data['title'] = "Calendar";
+        $data['sub_title'] = "Glenn Bennett Calendar";
+        $this->layout_view('cal_past', $data);
+    }
+    
+    public function dup()
+    {
+        $data['title'] = "Calendar";
+        $data['sub_title'] = "Glenn Bennett Calendar";
+        $this->layout_view('cal_dup', $data);
+    }    
+
+
+    public function links()
+    {
+
+        /* to find icon look here
+        /css/font-icons.css
+        */
+        $data['title'] = "Links";
+        $data['sub_title'] = "Quick Links";
+        
+        // Array of links with titles, descriptions, and URLs
+        $data['links'] = [
+            [
+                'title' => 'Request System',
+                'description' => 'Main Request link. Redirect to init',
+                'url' => '/r',
+                'icon' => 'icon-hand-up'
+            ],
+            [
+                'title' => 'Request System admin',
+                'description' => 'The admin system',
+                'url' => 'https://app.songperformer.com/reqman',
+                'icon' => 'icon-toolbox'
+            ],            
+            [
+                'title' => 'Customer Info',
+                'description' => 'My info for customer',
+                'url' => '/info',
+                'icon' => 'icon-info-sign'
+            ],
+            [
+                'title' => 'Duplicate a Gig Date',
+                'description' => 'Lets me quickly add a new gig',
+                'url' => '/dup',
+                'icon' => 'icon-copy'
+            ], 
+           [
+                'title' => 'My admin',
+                'description' => 'Newsletter, Ventues, etc.',
+                'url' => 'https://admin.glennbennett.com/',
+                'icon' => 'icon-cog'
+            ],                       
+
+        ];
+        
+        $this->layout_view('links', $data);
+    }
+
+    
+    public function tcal()
+    {
+        $data['title'] = "Calendar";
+        $data['sub_title'] = "Glenn Bennett Calendar";
+        $this->layout_view('tcal', $data);
+    }
+    
+    public function request()
+    {
+        redirect('https://app.songperformer.com/requests/init', 'refresh');
+    } 
+    
+    public function r()
+    {
+        $this->request();
+    }     
+
+    public function gm()
+    {
+        $this->album();
+    }  
+
+    public function album($album = 0)
+    {
+        $tracks = array(
+            array(
+                "name" => "Live At The Guitar Merchant",
+                "file" => "1-Intro.mp3"
+            ),
+            array(                               
+                "name" => "Show Dancin'",
+                "file" => "2-Slow Dancin.mp3"
+            ),
+            array( 
+                "name" => "Horse Whispering Music Talk",
+                "file" => "3-Horse Whistering Music Talk.mp3"
+            ),
+            array(                                                                                           
+                "name" => "The One You Love",
+                "file" => "4-The One Who Love You.mp3"
+            ),
+            array(
+                "name" => "Jack Tempchin Talk",
+                "file" => "5-Jack Tempchin talk.mp3"
+            ),
+            array(
+                "name" => "Loves First Lesson",
+                "file" => "6-Loves First Lesson.mp3"
+            ),
+            array(
+                "name" => "I've got a cold talk",
+                "file" => "7-Cold.mp3"
+            ),
+            array(
+                "name" => "Room to Run",
+                "file" => "8-Room To Run.mp3"
+            ),
+            array(
+                "name" => "Wood On The Fire talk",
+                "file" => "9-Wood on the Fire Talk.mp3"
+            ),
+            array(
+                "name" => "Wood On The Fire",
+                "file" => "10-Wood on the Fire.mp3"
+            ),
+            array(
+                "name" => "Old Words",
+                "file" => "11-Old Words.mp3"
+            ),
+            array(
+                "name" => "Light it up in the Bedroom Talk",
+                "file" => "12-Light is up in the bedroom Talk.mp3"
+            ),
+            array(
+                "name" => "Light it up in the Bedroom",
+                "file" => "13-Light is up in the bedroom.mp3"
+            )
+        );                                
+             
+        
+        
+        $data['title'] = "2016 Live Album";
+        $data['tracks'] = $tracks;
+        $data['sub_title'] = "Glenn Bennett Live at The Guitar Mechant 2016";
+        $data['player_path'] = "/player/";
+        $this->layout_view('album', $data);
+    }
+
+
+    function layout_view($view, $data)
+    {
+        $layout = $this->load->view('layouts/canvas-white.php', $data, true);
+        $nav = $this->load->view('partials/nav.php', '', true);
+        $content = $this->load->view($view, $data, true);
+        
+        $js = "";
+        $css = "";
+        if (is_file(APPPATH."views/js/$view.php"))
+        {
+            $js = $this->load->view("js/$view.php", '', true);
+        }
+        if (is_file(APPPATH."views/css/$view.php"))
+        {
+            $css = $this->load->view("css/$view.php", '', true);
+        }
+
+        $layout = str_replace('[nav]', $nav, $layout);
+        $layout = str_replace('[javascript]', $js, $layout);
+        $layout = str_replace('[css]', $css, $layout);
+        $page = str_replace('[content]', $content, $layout);
+
+        echo $page;
+    }
+    
+    function generateBacklink() 
+    {
+       // Check if there was a previous page
+       if(isset($_SERVER['HTTP_REFERER']) && !empty($_SERVER['HTTP_REFERER'])) {
+          // Generate the backlink using the referer URL
+          $backlink = '<a href="'.$_SERVER['HTTP_REFERER'].'">Go back</a>';
+          return $backlink;
+       } else {
+          // No previous page, return empty string
+          return '';
+       }
+    }    
+
+}

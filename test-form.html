@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Form Test</title>
+</head>
+<body>
+    <h1>Minimal Form Test</h1>
+    
+    <form action="/contact/send" method="POST" style="border: 2px solid red; padding: 20px;">
+        <p><strong>Name:</strong> <input type="text" name="name" value="Test User" required></p>
+        <p><strong>Email:</strong> <input type="email" name="email" value="test@example.com" required></p>
+        <p><strong>Phone:</strong> <input type="text" name="phone" value="555-1234"></p>
+        <p><strong>Subject:</strong> <input type="text" name="subject" value="Test Subject" required></p>
+        <p><strong>Message:</strong><br>
+        <textarea name="message" required>This is a test message to see if the form works.</textarea></p>
+        
+        <p><input type="submit" value="TEST SUBMIT" style="background: red; color: white; padding: 10px 20px; font-size: 16px;"></p>
+    </form>
+    
+    <script>
+        document.querySelector('form').addEventListener('submit', function(e) {
+            console.log('Form submission detected!');
+            console.log('Action:', this.action);
+            console.log('Method:', this.method);
+            // Don't prevent default - let it submit
+        });
+    </script>
+</body>
+</html>

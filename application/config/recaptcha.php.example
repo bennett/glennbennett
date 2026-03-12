@@ -1,0 +1,18 @@
+<?php
+defined('BASEPATH') OR exit('No direct script access allowed');
+
+/*
+|--------------------------------------------------------------------------
+| Google reCAPTCHA Configuration
+|--------------------------------------------------------------------------
+|
+| Configuration for Google reCAPTCHA
+| Get your key from: https://www.google.com/recaptcha/admin
+|
+*/
+
+// Your reCAPTCHA key
+$config['recaptcha_site_key'] = '6LeTxdMrAAAAAOK7Ld_C1n-Nx4N7cqXqThXVf-N-';
+
+// For newer reCAPTCHA setups, use the same key for both
+$config['recaptcha_secret_key'] = '6LeTxdMrAAAAACXVBWjRwm8bc1HtZBc2PdGVW4L7';

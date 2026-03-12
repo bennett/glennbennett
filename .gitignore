@@ -1,0 +1,44 @@
+# Credentials — these files contain passwords/API keys
+application/config/database.php
+application/config/email.php
+application/config/recaptcha.php
+
+# CodeIgniter Framework
+/system/
+
+# Composer Dependencies
+/vendor/
+
+# Sessions & Logs
+/application/ci_sessions/
+/application/logs/*
+php-error.log
+/gcal/php-error.log
+/ical/php-error.log
+/gcal/cache/
+
+# Large Media Directories
+/songs/
+/Listen/
+
+# Backups
+/backups/
+*.zip
+
+# Old/Test Directories
+/dup_event/
+/dup_event-old/
+/etest/
+/caltest/
+/wtest/
+/one-page/
+/qqq/
+/mrw/
+/fb1/
+/hap/
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store

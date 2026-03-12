@@ -1,0 +1,42 @@
+<!-- The DIV that will contain the widget -->
+<div class="weatherWidget"></div>
+<script>
+  window.weatherWidgetConfig = window.weatherWidgetConfig || [];
+  window.weatherWidgetConfig.push({
+    selector: ".weatherWidget",
+    apiKey: "RMRVJEQCLJMHF2AFDQEWBXLSA", // Replace with your API key
+    location: "Moorpark, CA, USA", // Enter an address
+    unitGroup: "us", // "us" or "metric"
+    forecastDays: 5, // How many days of forecast to show
+    title: "Weather", // Optional title to display
+    showTitle: true,
+    showConditions: true
+  });
+  (function() {
+    var d = document,
+      s = d.createElement("script");
+    s.src = "https://www.visualcrossing.com/widgets/forecast-simple/weather-forecast-widget-simple.js";
+    s.setAttribute("data-timestamp", +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+
+
+<div class="weatherWidget"  style="background-color: #ffffff99;height: 175px;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.js"></script>
+<link rel="stylesheet" href="https://www.visualcrossing.com/widgets/forecast/weather-forecast-widget-d3.css">
+<script>
+  window.weatherWidgetConfig =  window.weatherWidgetConfig || [];
+  window.weatherWidgetConfig.push({
+   selector:".weatherWidget",
+   apiKey:"RMRVJEQCLJMHF2AFDQEWBXLSA",
+   location:"_auto_",
+    unitGroup:"us"
+   });
+   (function() {
+     var d = document, s = d.createElement('script');
+     s.src = 'https://www.visualcrossing.com/widgets/forecast/weather-forecast-widget-d3.js';
+     s.setAttribute('data-timestamp', +new Date());
+     (d.head || d.body).appendChild(s);
+                })();
+</script>
