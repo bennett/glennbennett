@@ -197,53 +197,69 @@ function display_formated_listing($formatted_event)
     $time       = $formatted_event['display_date_time']; 
  
  
-     $generic_venue_imgs = array(
-      array(
-        'name' => 'Farmers Market',
-        'img_url' => '/imgs/cal/FarmersMarket.jpg'
-        ) 
-    );
-    
-    $venue_imgs = array(
-      array(
-        'name' => 'Santa Paula Farmers Market',
-        'img_url' => '/imgs/cal/SantaPaulaFarmersMarket.png'
-        ),
-      array(
-        'name' => 'Coffee A La Mode',
-        'img_url' => '/imgs/cal/Coffeelogo.jpg'
-        ),
-      array(
-        'name' => 'Adventist Health Simi Valley Farmers Market',
-        'img_url' => '/imgs/cal/AHSV-FarmersMarket-Logo.png'
-        ),
-      array(
-        'name' => 'Adventist Health Farmers Market',
-        'img_url' => '/imgs/cal/AHSV-FarmersMarket-Logo.png'
-        ),        
-      array(
-        'name' => 'Simi Valley Farmers Market',
-        'img_url' => '/imgs//cal/SimiValleyFarmersMarket.jpg'    
-        )  
-    );
+    // --- Try DB for venue images, fallback to hardcoded arrays ---
+    $generic_venue_imgs = array();
+    $venue_imgs = array();
+    $db_venues_loaded = false;
 
-    
+    try {
+        $vdb = new mysqli('localhost', 'tsgimh_glb', '2276midi', 'tsgimh_glb1');
+        if (!$vdb->connect_error) {
+            $vresult = $vdb->query("SELECT * FROM venues WHERE is_active = 1 ORDER BY id ASC");
+            if ($vresult && $vresult->num_rows > 0) {
+                $db_venues_loaded = true;
+                while ($vrow = $vresult->fetch_assoc()) {
+                    $entry = array(
+                        'name' => $vrow['match_pattern'],
+                        'img_url' => $vrow['venue_logo'],
+                        'match_type' => $vrow['match_type']
+                    );
+                    if ($vrow['match_type'] === 'alpha_only') {
+                        $generic_venue_imgs[] = $entry;
+                    } else {
+                        $venue_imgs[] = $entry;
+                    }
+                }
+            }
+            $vdb->close();
+        }
+    } catch (Exception $e) {
+        $db_venues_loaded = false;
+    }
+
+    // Fallback to hardcoded arrays if DB unavailable
+    if (!$db_venues_loaded) {
+        $generic_venue_imgs = array(
+            array('name' => 'Farmers Market', 'img_url' => '/imgs/cal/FarmersMarket.jpg', 'match_type' => 'alpha_only')
+        );
+
+        $venue_imgs = array(
+            array('name' => 'Santa Paula Farmers Market', 'img_url' => '/imgs/cal/SantaPaulaFarmersMarket.png', 'match_type' => 'exact'),
+            array('name' => 'Coffee A La Mode', 'img_url' => '/imgs/cal/Coffeelogo.jpg', 'match_type' => 'exact'),
+            array('name' => 'Adventist Health Simi Valley Farmers Market', 'img_url' => '/imgs/cal/AHSV-FarmersMarket-Logo.png', 'match_type' => 'exact'),
+            array('name' => 'Adventist Health Farmers Market', 'img_url' => '/imgs/cal/AHSV-FarmersMarket-Logo.png', 'match_type' => 'exact'),
+            array('name' => 'Simi Valley Farmers Market', 'img_url' => '/imgs/cal/SimiValleyFarmersMarket.jpg', 'match_type' => 'exact')
+        );
+    }
+
     $cal_image= "/imgs/cal/gig-stool.png";  // set default image
-    
-    // set generic images
+
+    // set generic images (alpha_only matching)
     foreach($generic_venue_imgs as $venue_img)
     {
         if(matchAlphaOnly($summary, $venue_img['name']) )
         {
             $cal_image = $venue_img['img_url'];
         }
-    }    
-    
-    // Now set a specfic one if available
+    }
+
+    // Now set a specific one if available (exact or contains matching)
     foreach($venue_imgs as $venue_img)
     {
-        if($summary == $venue_img['name'])
-        {
+        $match_type = isset($venue_img['match_type']) ? $venue_img['match_type'] : 'exact';
+        if ($match_type === 'contains' && strpos($summary, $venue_img['name']) !== false) {
+            $cal_image = $venue_img['img_url'];
+        } elseif ($summary == $venue_img['name']) {
             $cal_image = $venue_img['img_url'];
         }
     }

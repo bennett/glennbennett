@@ -60,6 +60,15 @@ $route['follow'] = 'site/mlist';
 $route['calendar'] = 'site/cal';
 $route['contact'] = 'contact/index';
 $route['contact/send'] = 'contact/send';
+$route['cal-image'] = 'site/cal_image';
+
+// Admin routes
+$route['admin'] = 'admin/index';
+$route['admin/login'] = 'admin_login/index';
+$route['admin/login/check'] = 'admin_login/check';
+$route['admin/logout'] = 'admin_login/logout';
+$route['admin/(:any)'] = 'admin/$1';
+
 $route['(:any)'] = 'site/$1';
 
 

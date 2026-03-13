@@ -799,6 +799,160 @@ public function build_data($featured_id = null)
           // No previous page, return empty string
           return '';
        }
-    }    
+    }
+
+	// --- Calendar Event Image Generator ---
+
+	public function cal_image()
+	{
+		date_default_timezone_set('America/Los_Angeles');
+
+		$start_date = $this->input->get('start_date');
+		$end_date = $this->input->get('end_date');
+		$summary = $this->input->get('summary');
+		$location = $this->input->get('location');
+		$forced_image = $this->input->get('image_no') !== null ? (int) $this->input->get('image_no') : null;
+
+		if ( ! $start_date || ! $end_date || ! $summary)
+		{
+			show_error('Missing parameters', 400);
+			return;
+		}
+
+		$date = date("l - M d", $start_date);
+		$time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
+
+		// --- Resolve image + layout from DB, fallback to config ---
+		$this->load->model('cal_image_model');
+		$this->load->model('venue_model');
+
+		$img_file = null;
+		$layout_values = null;
+
+		$images = $this->cal_image_model->get_active();
+
+		if ( ! empty($images))
+		{
+			$selected_image = null;
+
+			// Check for venue-specific images
+			if ($summary)
+			{
+				$venues = $this->venue_model->get_active_with_images();
+				$alpha_summary = strtoupper(preg_replace('/[^a-zA-Z]/', '', $summary));
+				$venue_image_ids = [];
+
+				foreach ($venues as $venue)
+				{
+					$match = false;
+
+					if ($venue->match_type === 'exact' && $summary === $venue->match_pattern)
+					{
+						$match = true;
+					}
+					elseif ($venue->match_type === 'contains' && strpos($summary, $venue->match_pattern) !== false)
+					{
+						$match = true;
+					}
+					elseif ($venue->match_type === 'alpha_only')
+					{
+						$alpha_pattern = strtoupper(preg_replace('/[^a-zA-Z]/', '', $venue->match_pattern));
+						if (strpos($alpha_summary, $alpha_pattern) !== false)
+						{
+							$match = true;
+						}
+					}
+
+					if ($match && ! empty($venue->images))
+					{
+						foreach ($venue->images as $vi)
+						{
+							$venue_image_ids[] = $vi->id;
+						}
+					}
+				}
+
+				if ( ! empty($venue_image_ids))
+				{
+					$day = (int) date("j", $start_date);
+					$idx = $day % count($venue_image_ids);
+					$selected_image = $this->cal_image_model->getById($venue_image_ids[$idx]);
+				}
+			}
+
+			// No venue match — use global pool
+			if ( ! $selected_image)
+			{
+				if ($forced_image !== null)
+				{
+					$idx = max(0, min($forced_image, count($images) - 1));
+				}
+				else
+				{
+					$day = (int) date("j", $start_date);
+					$idx = $day % count($images);
+				}
+				$selected_image = $images[$idx];
+			}
+
+			$img_file = FCPATH . $selected_image->image_path . $selected_image->filename;
+			$db_layout = $this->cal_image_model->get_layout($selected_image->id);
+
+			$layout_values = [
+				'text_offset'         => (int) $db_layout->text_offset,
+				'summary_font_size'   => (int) $db_layout->summary_font_size,
+				'summary_margin_top'  => (int) $db_layout->summary_margin_top,
+				'date_font_size'      => (int) $db_layout->date_font_size,
+				'date_margin_top'     => (int) $db_layout->date_margin_top,
+				'time_font_size'      => (int) $db_layout->time_font_size,
+				'time_margin_top'     => (int) $db_layout->time_margin_top,
+				'location_font_size'  => (int) $db_layout->location_font_size,
+				'location_margin_top' => (int) $db_layout->location_margin_top,
+			];
+		}
+		else
+		{
+			// Fallback to original config-file behavior
+			$no_of_bg_images = 25;
+
+			if ($forced_image !== null)
+			{
+				$image_no = max(0, min($forced_image, $no_of_bg_images - 1));
+			}
+			else
+			{
+				$image_no = date("j", $start_date);
+				$image_no = ($image_no % ($no_of_bg_images - 1)) - 1;
+				if ($image_no < 0) $image_no = 0;
+			}
+
+			$img_file = FCPATH . 'imgs/Cal-Event-' . $image_no . '.jpg';
+			$layout_values = [
+				'text_offset' => -200, 'summary_font_size' => 36, 'summary_margin_top' => 260,
+				'date_font_size' => 24, 'date_margin_top' => 25, 'time_font_size' => 36,
+				'time_margin_top' => 25, 'location_font_size' => 24, 'location_margin_top' => 25,
+			];
+		}
+
+		// Render using shared library
+		$this->load->library('cal_image_renderer');
+
+		$im = $this->cal_image_renderer->render($img_file, [
+			'summary'  => $summary,
+			'date'     => $date,
+			'time'     => $time,
+			'location' => $location,
+		], $layout_values, FCPATH . 'fonts/');
+
+		if ( ! $im)
+		{
+			show_error('Could not load background image', 500);
+			return;
+		}
+
+		header('Content-type: image/jpeg');
+		imagepng($im);
+		imagedestroy($im);
+	}
 
 }
