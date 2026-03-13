@@ -20,6 +20,14 @@
         </a>
     </li>
 
+    <li class="header">ACCOUNT</li>
+
+    <li <?php echo ($page->menu == 'password') ? 'class="active"' : '' ?>>
+        <a href="<?php echo site_url('admin/change_password') ?>">
+            <i class="fa fa-key"></i> <span>Change Password</span>
+        </a>
+    </li>
+
     <li class="header">LINKS</li>
 
     <li>

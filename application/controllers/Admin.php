@@ -202,6 +202,46 @@ class Admin extends Admin_Controller {
 		imagedestroy($im);
 	}
 
+	// --- Account ---
+
+	public function change_password()
+	{
+		$this->page_data['page']->title = 'Change Password';
+		$this->page_data['page']->menu = '';
+
+		if ($this->input->method() === 'post')
+		{
+			$this->load->library('form_validation');
+			$this->load->model('admin_user_model');
+
+			$this->form_validation->set_rules('current_password', 'Current Password', 'required');
+			$this->form_validation->set_rules('new_password', 'New Password', 'required|min_length[4]');
+			$this->form_validation->set_rules('confirm_password', 'Confirm Password', 'required|matches[new_password]');
+
+			if ($this->form_validation->run() !== FALSE)
+			{
+				$user_id = admin_logged('id');
+				$user = $this->db->get_where('admin_users', ['id' => $user_id])->row();
+
+				if (password_verify($this->input->post('current_password'), $user->password_hash))
+				{
+					$this->admin_user_model->change_password($user_id, $this->input->post('new_password'));
+
+					$this->session->set_flashdata('alert', 'Password changed successfully.');
+					$this->session->set_flashdata('alert-type', 'success');
+					redirect('admin', 'refresh');
+				}
+				else
+				{
+					$this->session->set_flashdata('alert', 'Current password is incorrect.');
+					$this->session->set_flashdata('alert-type', 'danger');
+				}
+			}
+		}
+
+		$this->load->view('admin/change_password', $this->page_data);
+	}
+
 	// --- Venue Management ---
 
 	public function venues()
