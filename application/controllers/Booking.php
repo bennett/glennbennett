@@ -160,20 +160,41 @@ class Booking extends CI_Controller {
 
     private function send_booking_email($form)
     {
+        $email_message = $this->create_email_template($form);
+
+        // Try SES first (works locally and in production)
+        $this->load->library('ses_email');
+        if ($this->ses_email->is_available()) {
+            $result = $this->ses_email
+                ->from($this->contact_email, $this->from_name)
+                ->reply_to($form['contactEmail'])
+                ->to($this->contact_email)
+                ->subject($this->subject_prefix . $form['eventType'] . ' - ' . $form['eventDate'])
+                ->message($email_message)
+                ->send();
+
+            if (!$result) {
+                log_message('error', 'Booking form SES email failed: ' . $this->ses_email->print_debugger());
+            }
+            return $result;
+        }
+
+        // Fallback to CI3 email (production shared hosting)
+        if (ENVIRONMENT !== 'production') {
+            log_message('info', 'Booking email not sent (local dev, no SES): ' . $form['contactName']);
+            return false;
+        }
+
         $this->email->from($this->contact_email, $this->from_name);
         $this->email->reply_to($form['contactEmail'], $form['contactName']);
         $this->email->to($this->contact_email);
         $this->email->subject($this->subject_prefix . $form['eventType'] . ' - ' . $form['eventDate']);
-
-        $email_message = $this->create_email_template($form);
         $this->email->message($email_message);
 
         $result = $this->email->send();
-
         if (!$result) {
             log_message('error', 'Booking form email failed to send: ' . $this->email->print_debugger());
         }
-
         return $result;
     }
 

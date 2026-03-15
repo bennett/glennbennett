@@ -326,4 +326,74 @@ class Admin extends Admin_Controller {
 		$this->session->set_flashdata('alert-type', 'success');
 		redirect('admin/venues', 'refresh');
 	}
+
+	// --- Test Email ---
+
+	public function test_email()
+	{
+		$this->page_data['page']->title = 'Test Email';
+		$this->page_data['page']->menu = 'test_email';
+
+		$this->load->library('ses_email');
+		$this->page_data['ses_available'] = $this->ses_email->is_available();
+
+		$this->load->view('admin/test_email', $this->page_data);
+	}
+
+	public function send_test_email()
+	{
+		$to = $this->input->post('to_email');
+		if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+			$this->session->set_flashdata('alert', 'Please enter a valid email address.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/test_email', 'refresh');
+		}
+
+		$this->load->library('ses_email');
+
+		if (!$this->ses_email->is_available()) {
+			$this->session->set_flashdata('alert', 'SES is not configured — check AWS credentials in .env');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/test_email', 'refresh');
+		}
+
+		$domain = 'glennbennett.com';
+		$from = 'gbennett@tsgdev.com';
+		$timestamp = date('M j, Y g:i:s A');
+
+		$html = '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">'
+			. '<h2 style="color: #333;">Test Email from glennbennett.com</h2>'
+			. '<p>This is a test email sent via <strong>Amazon SES</strong> from the admin panel.</p>'
+			. '<table style="border-collapse: collapse; margin: 20px 0;">'
+			. '<tr><td style="padding: 6px 12px; border: 1px solid #ddd; font-weight: bold;">From</td>'
+			. '<td style="padding: 6px 12px; border: 1px solid #ddd;">' . htmlspecialchars($from) . '</td></tr>'
+			. '<tr><td style="padding: 6px 12px; border: 1px solid #ddd; font-weight: bold;">To</td>'
+			. '<td style="padding: 6px 12px; border: 1px solid #ddd;">' . htmlspecialchars($to) . '</td></tr>'
+			. '<tr><td style="padding: 6px 12px; border: 1px solid #ddd; font-weight: bold;">Domain</td>'
+			. '<td style="padding: 6px 12px; border: 1px solid #ddd;">' . $domain . '</td></tr>'
+			. '<tr><td style="padding: 6px 12px; border: 1px solid #ddd; font-weight: bold;">Sent at</td>'
+			. '<td style="padding: 6px 12px; border: 1px solid #ddd;">' . $timestamp . '</td></tr>'
+			. '</table>'
+			. '<p style="color: #666; font-size: 13px;">Check the email headers for SPF, DKIM, and DMARC results.</p>'
+			. '</div>';
+
+		$result = $this->ses_email
+			->from($from, 'Glenn Bennett Website')
+			->to($to)
+			->subject('Test Email — ' . $domain . ' — ' . $timestamp)
+			->message($html)
+			->send();
+
+		if ($result) {
+			$debug = $this->ses_email->print_debugger();
+			$this->session->set_flashdata('alert', 'Test email sent to <strong>' . htmlspecialchars($to) . '</strong>. ' . htmlspecialchars($debug));
+			$this->session->set_flashdata('alert-type', 'success');
+		} else {
+			$debug = $this->ses_email->print_debugger();
+			$this->session->set_flashdata('alert', 'Failed to send: ' . htmlspecialchars($debug));
+			$this->session->set_flashdata('alert-type', 'danger');
+		}
+
+		redirect('admin/test_email', 'refresh');
+	}
 }

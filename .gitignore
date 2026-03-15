@@ -1,4 +1,5 @@
 # Credentials — these files contain passwords/API keys
+.env
 application/config/database.php
 application/config/email.php
 application/config/recaptcha.php

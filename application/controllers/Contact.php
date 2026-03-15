@@ -355,24 +355,41 @@ class Contact extends CI_Controller {
 
     private function send_contact_email($name, $email, $phone, $subject, $message)
     {
-        // Configure the email using class properties
-        $this->email->from($this->contact_email, $this->from_name); // Use your email as from address
-        $this->email->reply_to($email, $name);                     // Reply goes to the person who filled the form
-        $this->email->to($this->contact_email);                    // Send to your email
-        $this->email->subject($this->subject_prefix . $subject);
-
-        // Create HTML email template
         $email_message = $this->create_email_template($name, $email, $phone, $subject, $message);
+
+        // Try SES first (works locally and in production)
+        $this->load->library('ses_email');
+        if ($this->ses_email->is_available()) {
+            $result = $this->ses_email
+                ->from($this->contact_email, $this->from_name)
+                ->reply_to($email)
+                ->to($this->contact_email)
+                ->subject($this->subject_prefix . $subject)
+                ->message($email_message)
+                ->send();
+
+            if (!$result) {
+                log_message('error', 'Contact form SES email failed: ' . $this->ses_email->print_debugger());
+            }
+            return $result;
+        }
+
+        // Fallback to CI3 email (production shared hosting)
+        if (ENVIRONMENT !== 'production') {
+            log_message('info', 'Contact email not sent (local dev, no SES) from: ' . $email);
+            return false;
+        }
+
+        $this->email->from($this->contact_email, $this->from_name);
+        $this->email->reply_to($email, $name);
+        $this->email->to($this->contact_email);
+        $this->email->subject($this->subject_prefix . $subject);
         $this->email->message($email_message);
 
-        // Attempt to send email
         $result = $this->email->send();
-        
-        // Log email sending attempts for debugging
         if (!$result) {
             log_message('error', 'Contact form email failed to send: ' . $this->email->print_debugger());
         }
-
         return $result;
     }
 

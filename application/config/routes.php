@@ -67,6 +67,9 @@ $route['admin'] = 'admin/index';
 $route['admin/login'] = 'admin_login/index';
 $route['admin/login/check'] = 'admin_login/check';
 $route['admin/logout'] = 'admin_login/logout';
+$route['admin/dup_events'] = 'admin_dup/index';
+$route['admin/dup_events/day'] = 'admin_dup/day';
+$route['admin/dup_events/generate_csv'] = 'admin_dup/generate_csv';
 $route['admin/(:any)'] = 'admin/$1';
 
 $route['(:any)'] = 'site/$1';

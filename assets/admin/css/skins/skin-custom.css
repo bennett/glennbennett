@@ -68,8 +68,11 @@
   color: #fff;
 }
 .skin-custom .sidebar-menu > li.header {
-  color: #4b646f;
+  color: #8aa4af;
   background: #1a2226;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
 }
 .skin-custom .sidebar-menu > li > a {
   border-left: 3px solid transparent;

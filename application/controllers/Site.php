@@ -620,10 +620,8 @@ public function build_data($featured_id = null)
     
     public function dup()
     {
-        $data['title'] = "Calendar";
-        $data['sub_title'] = "Glenn Bennett Calendar";
-        $this->layout_view('cal_dup', $data);
-    }    
+        redirect('admin/dup_events');
+    }
 
 
     public function links()

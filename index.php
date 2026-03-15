@@ -318,4 +318,12 @@ switch (ENVIRONMENT)
  *
  * And away we go...
  */
+// Load .env if available
+$dotenvPath = __DIR__ . '/.env';
+if (file_exists($dotenvPath) && file_exists(__DIR__ . '/vendor/autoload.php')) {
+	require_once __DIR__ . '/vendor/autoload.php';
+	$dotenv = Dotenv\Dotenv::createUnsafeImmutable(__DIR__);
+	$dotenv->safeLoad();
+}
+
 require_once BASEPATH.'core/CodeIgniter.php';

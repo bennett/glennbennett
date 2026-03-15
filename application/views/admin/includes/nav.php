@@ -8,15 +8,33 @@
         </a>
     </li>
 
-    <li <?php echo ($page->menu == 'images') ? 'class="active"' : '' ?>>
-        <a href="<?php echo site_url('admin/images') ?>">
-            <i class="fa fa-image"></i> <span>Calendar Images</span>
+    <li class="treeview <?php echo in_array($page->menu, ['images', 'venues', 'dup_events']) ? 'active menu-open' : '' ?>">
+        <a href="#">
+            <i class="fa fa-calendar"></i> <span>Calendar Tools</span>
+            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
         </a>
+        <ul class="treeview-menu">
+            <li <?php echo ($page->menu == 'images') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/images') ?>">
+                    <i class="fa fa-image"></i> <span>Sharing Images</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'venues') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/venues') ?>">
+                    <i class="fa fa-map-marker"></i> <span>Venue Images</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'dup_events') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/dup_events') ?>">
+                    <i class="fa fa-copy"></i> <span>Duplicate Events</span>
+                </a>
+            </li>
+        </ul>
     </li>
 
-    <li <?php echo ($page->menu == 'venues') ? 'class="active"' : '' ?>>
-        <a href="<?php echo site_url('admin/venues') ?>">
-            <i class="fa fa-map-marker"></i> <span>Venues</span>
+    <li <?php echo ($page->menu == 'test_email') ? 'class="active"' : '' ?>>
+        <a href="<?php echo site_url('admin/test_email') ?>">
+            <i class="fa fa-envelope"></i> <span>Test Email</span>
         </a>
     </li>
 
