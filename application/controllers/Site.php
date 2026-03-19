@@ -515,13 +515,6 @@ public function build_data($featured_id = null)
         $this->layout_view('about', $data);
     }
 
-    public function docs()
-    {
-        $data['title'] = "Docs";
-        $data['sub_title'] = "Site Documentation";
-        $this->layout_view('docs', $data);
-    }
-    
     public function tip()
     {
         $data['title'] = "Tip";

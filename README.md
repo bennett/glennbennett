@@ -2,42 +2,6 @@
 
 Public musician portfolio and gig calendar at glennbennett.com. Showcases original music, lists upcoming live performances, and handles booking inquiries.
 
-## Software Versions
-
-| Component | Version |
-|-----------|---------|
-| CodeIgniter | 3.1.11 |
-| PHP | 8.4 |
-| MySQL | 9.6.0 |
-| Bootstrap | 3 |
-| jQuery | (bundled) |
-| AWS SDK | via Composer |
-
-## Hosting & Access
-
-| Environment | Details |
-|-------------|---------|
-| **Local** | glennbennett.com.test (Herd — Nginx + PHP-FPM) |
-| **Production** | glennbennett.com (InMotion shared hosting — Apache) |
-| **FTP** | `lftp glennbennett` → ftp.tsgimh.com |
-| **Database** | `tsgimh_glb1` — localhost, root, no password (local) |
-| **SSL (local)** | `herd secure glennbennett.com` for HTTPS |
-
-## Email
-
-- **Provider:** Amazon SES (us-west-1, production mode)
-- **Library:** `Ses_email` in `application/libraries/` — uses AWS SDK directly (API, not SMTP)
-- **Send from:** `gbennett@tsgdev.com` (verified in SES)
-- **Domain:** glennbennett.com — fully verified with DKIM, SPF, DMARC
-- **Config:** `application/config/amazon_ses.php` (gitignored, credentials from `.env`)
-- **Used by:** Booking form, contact form, admin test email sender
-
-## Local Setup
-
-- **Domain:** glennbennett.com.test (via Herd)
-- **Config files:** Copy `.php.example` files in `application/config/` (database, email, recaptcha, amazon_ses)
-- **SSL:** Run `herd secure glennbennett.com` for HTTPS
-
 ## Key Features
 
 - **Homepage** with featured track audio player, hero section, and upcoming gig carousel
@@ -124,7 +88,3 @@ assets/           — JS, CSS, images, fonts
 imgs/cal-backgrounds/ — sharing image backgrounds
 vendor/           — Composer packages (johngrogg/ics-parser, spatie/calendar-links, aws/aws-sdk-php)
 ```
-
-## Deployment
-
-Deploy to InMotion via lftp: `lftp glennbennett` then mirror/sync files. Production runs Apache with `.htaccess` URL rewriting. Email delivered via SES API (not SMTP).

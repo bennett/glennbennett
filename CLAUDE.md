@@ -65,3 +65,13 @@ Config files with credentials are in `application/config/` — database.php, ema
 ### URL Routing
 
 Defined in `application/config/routes.php`. The `.htaccess` rewrites all non-file requests to `index.php` (CodeIgniter front controller pattern).
+
+### Deployment
+
+Deploy to InMotion via lftp using the `glennbennett` bookmark:
+
+```bash
+lftp glennbennett -e "mirror --reverse --exclude-glob-from ~/.lftp/exclude-list . ."
+```
+
+The shared exclude list at `~/.lftp/exclude-list` filters out docs, dev files, vendor/, system/, logs, cache, and uploads.
