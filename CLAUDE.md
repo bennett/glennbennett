@@ -44,6 +44,33 @@ This is **Glenn Bennett's musician website** — a CodeIgniter 3 PHP application
 3. **Facebook sharing** pages generate Open Graph metadata for individual events.
 4. **Contact/Booking forms** use reCAPTCHA v3 validation and send via SMTP.
 
+## Admin Authentication
+
+**Local dev:** Plain-text login via `.env` (`admin`/`admin`). The `Admin_user_model::attempt()` checks `.env` credentials first, then falls back to the database.
+
+**Production:** Google OAuth via `Google_auth` library (raw cURL, no Composer dependencies). OAuth client "Bennett CI3 Sites" in Google Cloud Console with redirect URI `https://glennbennett.com/admin/login/google_callback`.
+
+**Important:** `ADMIN_USERNAME`/`ADMIN_PASSWORD` must NOT be in the production `.env` — only Google OAuth should work there.
+
+## Environment Variables (.env)
+
+The `.env` file is loaded by a simple built-in parser in `index.php` — **NOT** by `vlucas/phpdotenv`. This is intentional: production (InMotion) runs PHP 7.2 via the web server and cannot use Composer packages that require PHP 8.1+. The `vendor/` directory is excluded from deployment and does not exist on production.
+
+**Local `.env`:**
+```
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=us-west-1
+GOOGLE_AUTH_CLIENT_ID=...
+GOOGLE_AUTH_CLIENT_SECRET=...
+GOOGLE_AUTH_REDIRECT_URI=https://glennbennett.com/admin/login/google_callback
+GOOGLE_AUTH_ALLOWED_EMAIL=gbennett@tsgdev.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin
+```
+
+**Production `.env`:** Same but without `ADMIN_USERNAME`/`ADMIN_PASSWORD`.
+
 ## Development
 
 ### Local Environment
@@ -56,7 +83,9 @@ The site runs under Laravel Herd. The web root is this directory. Access via the
 composer install
 ```
 
-Key packages: `spatie/calendar-links` (generate add-to-calendar links), `johngrogg/ics-parser` (parse iCal feeds).
+Key packages: `spatie/calendar-links` (generate add-to-calendar links), `johngrogg/ics-parser` (parse iCal feeds), `aws/aws-sdk-php` (SES email).
+
+**CRITICAL:** `vendor/` is NOT deployed to production. Production does not use Composer at all. The `.env` parser in `index.php` is self-contained. Do NOT add Composer dependencies that are needed at runtime on production — use raw PHP/cURL instead (see `Google_auth.php` and `Ses_email.php` as examples).
 
 ### Configuration
 
@@ -65,6 +94,10 @@ Config files with credentials are in `application/config/` — database.php, ema
 ### URL Routing
 
 Defined in `application/config/routes.php`. The `.htaccess` rewrites all non-file requests to `index.php` (CodeIgniter front controller pattern).
+
+### Production PHP Version
+
+InMotion shared hosting runs **PHP 7.2** for web requests (set via `AddHandler ea-php72` in `.htaccess`). The CLI PHP is 8.3 but that's irrelevant — the web server uses a different binary. Upgrading the web PHP to 8.1+ causes a 500 error (unresolved as of 2026-03-19). Do NOT deploy `vendor/` or any code that requires PHP 8.1+.
 
 ### Deployment
 
@@ -75,3 +108,9 @@ lftp glennbennett -e "mirror --reverse --exclude-glob-from ~/.lftp/exclude-list 
 ```
 
 The shared exclude list at `~/.lftp/exclude-list` filters out docs, dev files, vendor/, system/, logs, cache, and uploads.
+
+**Post-deploy checklist:**
+- `.env` must exist on the server (created manually via cPanel File Manager)
+- `vendor/` must NOT exist on the server (if it does, `rm -rf ~/glennbennett.com/vendor`)
+- `.htaccess` must have the `ea-php72` handler (lftp excludes `.htaccess` so it won't be overwritten)
+- `system/` must exist on the server (not deployed, already there)

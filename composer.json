@@ -26,6 +26,9 @@
 	"config": {
 		"audit": {
 			"block-insecure": false
+		},
+		"platform": {
+			"php": "8.1.34"
 		}
 	}
 }

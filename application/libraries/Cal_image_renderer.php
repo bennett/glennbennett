@@ -167,6 +167,18 @@ class Cal_image_renderer {
         $time = isset($texts['time']) ? $texts['time'] : '';
         $location = isset($texts['location']) ? $texts['location'] : '';
 
+        // Start entire text block at Vertical Position
+        $this->y = $summary_margin_top;
+
+        // Title header: "Glenn Bennett" / "Performs" in Aladdin font
+        $font_title = $font_dir . 'Aladin-Regular.ttf';
+        $title_font_size = isset($layout['title_font_size']) ? (int) $layout['title_font_size'] : 72;
+        $subtitle_font_size = isset($layout['subtitle_font_size']) ? (int) $layout['subtitle_font_size'] : 48;
+
+        $this->print_line(['text' => 'Glenn Bennett', 'font' => $font_title, 'font_size' => $title_font_size], $text_offset, $text_color);
+        $this->print_line(['text' => 'Performs', 'font' => $font_title, 'font_size' => $subtitle_font_size], $text_offset, $text_color);
+        $this->y += 30;
+
         // Build main text entries
         $msg_text_main = [
             ['text' => $summary, 'font' => $font_bold, 'font_size' => $summary_font_size],
@@ -174,8 +186,6 @@ class Cal_image_renderer {
             ['text' => ' ',      'font' => $font_bold, 'font_size' => 18],
             ['text' => $time,    'font' => $font_bold, 'font_size' => $time_font_size],
         ];
-
-        $this->y = $summary_margin_top;
 
         // Print main text with long-text wrapping
         foreach ($msg_text_main as $idx => $msg) {
@@ -229,6 +239,10 @@ class Cal_image_renderer {
             ];
             $this->print_line($msg_text, $text_offset, $text_color);
         }
+
+        // Footer: website URL
+        $this->y += 20;
+        $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $font_bold, 'font_size' => 22], $text_offset, $text_color);
     }
 
     private function print_line($msg, $offset, $color)

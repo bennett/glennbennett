@@ -8,8 +8,8 @@
 
 <section class="content">
 
+    <!-- Preview + Photo Position below it -->
     <div class="row">
-        <!-- Preview -->
         <div class="col-md-7">
             <div class="box box-primary">
                 <div class="box-header with-border">
@@ -24,29 +24,32 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Controls -->
-        <div class="col-md-5">
-            <!-- Photo Controls -->
+            <!-- Photo Controls (under preview) -->
             <div class="box box-info">
                 <div class="box-header with-border">
                     <h3 class="box-title"><i class="fa fa-user"></i> Photo Position</h3>
                 </div>
                 <div class="box-body">
-                    <div class="form-group">
-                        <label>X Position: <span id="val_photo_x"><?php echo $template->photo_x ?></span>px</label>
-                        <input type="range" id="photo_x" min="-500" max="1500" value="<?php echo $template->photo_x ?>" class="layout-range" style="width:100%">
+                    <div class="row">
+                        <div class="col-xs-8">
+                            <div class="form-group">
+                                <label>X Position: <span id="val_photo_x"><?php echo $template->photo_x ?></span>px</label>
+                                <input type="range" id="photo_x" min="-500" max="1500" value="<?php echo $template->photo_x ?>" class="layout-range" style="width:100%">
+                            </div>
+                            <div class="form-group">
+                                <label>Scale: <span id="val_photo_scale"><?php echo $template->photo_scale ?></span>%</label>
+                                <input type="range" id="photo_scale" min="10" max="300" value="<?php echo $template->photo_scale ?>" class="layout-range" style="width:100%">
+                            </div>
+                        </div>
+                        <div class="col-xs-4 text-center">
+                            <label>Y: <span id="val_photo_y"><?php echo $template->photo_y ?></span>px</label>
+                            <div style="display: flex; justify-content: center;">
+                                <input type="range" id="photo_y" min="-500" max="1500" value="<?php echo $template->photo_y ?>" class="layout-range" orient="vertical" style="writing-mode: vertical-lr; height: 150px; width: 30px;">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Y Position: <span id="val_photo_y"><?php echo $template->photo_y ?></span>px</label>
-                        <input type="range" id="photo_y" min="-500" max="1500" value="<?php echo $template->photo_y ?>" class="layout-range" style="width:100%">
-                    </div>
-                    <div class="form-group">
-                        <label>Scale: <span id="val_photo_scale"><?php echo $template->photo_scale ?></span>%</label>
-                        <input type="range" id="photo_scale" min="10" max="300" value="<?php echo $template->photo_scale ?>" class="layout-range" style="width:100%">
-                    </div>
-                    <div class="form-group">
+                    <div class="form-group" style="margin-top: 15px;">
                         <label>Photo Glow: <span id="val_photo_glow_radius"><?php echo $template->photo_glow_radius ?></span>px</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <input type="range" id="photo_glow_radius" min="0" max="30" value="<?php echo $template->photo_glow_radius ?>" class="layout-range" style="flex: 1;">
@@ -55,42 +58,50 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Text Controls -->
+        <!-- Text Controls -->
+        <div class="col-md-5">
             <div class="box box-warning">
                 <div class="box-header with-border">
                     <h3 class="box-title"><i class="fa fa-font"></i> Text Layout</h3>
                 </div>
                 <div class="box-body">
-                    <div class="form-group">
-                        <label>Horizontal Offset: <span id="val_text_offset"><?php echo $template->text_offset ?></span>px</label>
-                        <input type="range" id="text_offset" min="-400" max="400" value="<?php echo $template->text_offset ?>" class="layout-range" style="width:100%">
-                    </div>
-                    <div class="form-group">
-                        <label>Vertical Position: <span id="val_summary_margin_top"><?php echo $template->summary_margin_top ?></span>px</label>
-                        <input type="range" id="summary_margin_top" min="20" max="500" value="<?php echo $template->summary_margin_top ?>" class="layout-range" style="width:100%">
-                    </div>
-                    <div class="form-group">
-                        <label>Font Color</label><br>
-                        <input type="color" id="font_color" value="<?php echo $template->font_color ?: '#ffffff' ?>" class="layout-color" style="width: 60px; height: 34px; padding: 2px; cursor: pointer;">
-                    </div>
-                    <div class="form-group">
-                        <label>Glow: <span id="val_glow_radius"><?php echo $template->glow_radius ?></span>px</label>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="range" id="glow_radius" min="0" max="10" value="<?php echo $template->glow_radius ?>" class="layout-range" style="flex: 1;">
-                            <input type="color" id="glow_color" value="<?php echo $template->glow_color ?: '#ffffff' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                    <div class="row">
+                        <div class="col-xs-8">
+                            <div class="form-group">
+                                <label>Horizontal Offset: <span id="val_text_offset"><?php echo $template->text_offset ?></span>px</label>
+                                <input type="range" id="text_offset" min="-400" max="400" value="<?php echo $template->text_offset ?>" class="layout-range" style="width:100%">
+                            </div>
+                            <div class="form-group">
+                                <label>Font Color</label><br>
+                                <input type="color" id="font_color" value="<?php echo $template->font_color ?: '#ffffff' ?>" class="layout-color" style="width: 60px; height: 34px; padding: 2px; cursor: pointer;">
+                            </div>
+                            <div class="form-group">
+                                <label>Glow: <span id="val_glow_radius"><?php echo $template->glow_radius ?></span>px</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="range" id="glow_radius" min="0" max="10" value="<?php echo $template->glow_radius ?>" class="layout-range" style="flex: 1;">
+                                    <input type="color" id="glow_color" value="<?php echo $template->glow_color ?: '#ffffff' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Stroke: <span id="val_stroke_width"><?php echo $template->stroke_width ?></span>px</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="range" id="stroke_width" min="0" max="6" value="<?php echo $template->stroke_width ?>" class="layout-range" style="flex: 1;">
+                                    <input type="color" id="stroke_color" value="<?php echo $template->stroke_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Shadow: <span id="val_shadow_offset"><?php echo $template->shadow_offset ?></span>px</label>
+                                <input type="range" id="shadow_offset" min="0" max="8" value="<?php echo $template->shadow_offset ?>" class="layout-range" style="width:100%">
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Stroke: <span id="val_stroke_width"><?php echo $template->stroke_width ?></span>px</label>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="range" id="stroke_width" min="0" max="6" value="<?php echo $template->stroke_width ?>" class="layout-range" style="flex: 1;">
-                            <input type="color" id="stroke_color" value="<?php echo $template->stroke_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                        <div class="col-xs-4 text-center">
+                            <label>Y: <span id="val_summary_margin_top"><?php echo $template->summary_margin_top ?></span>px</label>
+                            <div style="display: flex; justify-content: center;">
+                                <input type="range" id="summary_margin_top" min="20" max="500" value="<?php echo $template->summary_margin_top ?>" class="layout-range" orient="vertical" style="writing-mode: vertical-lr; height: 150px; width: 30px;">
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Shadow: <span id="val_shadow_offset"><?php echo $template->shadow_offset ?></span>px</label>
-                        <input type="range" id="shadow_offset" min="0" max="8" value="<?php echo $template->shadow_offset ?>" class="layout-range" style="width:100%">
                     </div>
                 </div>
             </div>
