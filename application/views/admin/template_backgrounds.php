@@ -19,6 +19,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="image_file">Select Image (JPG/PNG, max 5MB)</label>
+                            <p class="help-block">Recommended size: <strong>1200 x 630px</strong> (Facebook OG image standard)</p>
                             <input type="file" name="image_file" id="image_file" class="form-control" accept=".jpg,.jpeg,.png" required>
                         </div>
                     </div>

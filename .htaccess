@@ -11,8 +11,8 @@ RewriteCond %{HTTP_HOST} ^glennbennett1\.tsgimh\.com$ [OR]
 RewriteCond %{HTTP_HOST} ^www\.glennbennett1\.tsgimh\.com$
 
 # php -- BEGIN cPanel-generated handler, do not edit
-# Set the “ea-php72” package as the default “PHP” programming language.
+# Set the “ea-php84” package as the default “PHP” programming language.
 <IfModule mime_module>
-  AddHandler application/x-httpd-ea-php72 .php .php7 .phtml
+  AddHandler application/x-httpd-ea-php84 .php .php7 .phtml
 </IfModule>
 # php -- END cPanel-generated handler, do not edit
