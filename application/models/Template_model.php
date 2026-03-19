@@ -92,6 +92,18 @@ class Template_model extends MY_Model {
 		}
 	}
 
+	public function get_active_with_assets()
+	{
+		return $this->db
+			->select('templates.*, template_backgrounds.filename as bg_filename, template_photos.filename as photo_filename')
+			->join('template_backgrounds', 'template_backgrounds.id = templates.background_id')
+			->join('template_photos', 'template_photos.id = templates.photo_id')
+			->where('templates.is_active', 1)
+			->order_by('templates.id', 'ASC')
+			->get($this->table)
+			->result();
+	}
+
 	public function get_all_with_assets()
 	{
 		return $this->db

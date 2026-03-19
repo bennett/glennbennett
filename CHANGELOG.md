@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-03-19 — Share Images with Short URLs
+
+### Changes
+- Share image URLs now use short hash-based URLs (`/cal-image/a3f8b2`) instead of fragile base64/query string URLs
+- Event data stored in `share_images` DB table (max 100 rows, auto-pruned)
+- Past events render an "event has passed" image with stored event name/date
+- Facebook controller and Site `fb()` generate share hashes automatically
+- OG image tags use short URLs for reliable social media previews
+- Old query string URLs (`/cal-image?start_date=...`) still work for backwards compatibility
+- Old files (`gcal/cal_image.php`, `gcal/fb_image.php`) untouched — cached links still work
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `application/models/Share_image_model.php` | New — find_or_create with hash, get_by_hash, auto-prune |
+| `application/models/Template_model.php` | Added `get_active_with_assets()` |
+| `application/libraries/Cal_image_renderer.php` | Added `render_expired()` for past events |
+| `application/controllers/Site.php` | `cal_image()` accepts hash param, expired logic |
+| `application/controllers/Facebook.php` | Generates share hash, uses `og.php` partial |
+| `application/config/routes.php` | Added `cal-image/(:any)` route |
+| `application/views/partials/og.php` | OG image uses short URL |
+| `application/views/fb.php` | Inline image uses short URL |
+| `application/views/fb1.php` | Inline image uses short URL |
+| `docs/share_images.sql` | New — table definition for production |
+
 ## 2026-03-11 v1 — "How to Listen" Section & Song List Styling
 
 ### Changes

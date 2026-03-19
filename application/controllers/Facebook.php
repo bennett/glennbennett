@@ -89,10 +89,15 @@ class Facebook extends CI_Controller {
         // Calculate date difference
         $this->date_diff->days_diff($today, $event_day);
         $data['date_diff'] = $this->date_diff->days_diff_str($today, $event_day);
-        
-        // Add OG metadata using new fb_og partial
-        $data['og'] = $this->load->view("partials/fb_og.php", $data, true);
-        
+
+        // Generate short URL hash for share image
+        $this->load->model('share_image_model');
+        $share = $this->share_image_model->find_or_create($summary, $location, $start_date, $end_date);
+        $data['share_hash'] = $share->hash;
+
+        // Add OG metadata using og partial with short URL
+        $data['og'] = $this->load->view("partials/og.php", $data, true);
+
         // Use the new fb1 view
         $this->layout_view('fb1', $data);
     }

@@ -22,7 +22,7 @@ $(document).ready(function(){
                     
                      <strong text-center><?php echo $location; ?></strong><hr>
                     
-                    <img src="https://glennbennett.com/gcal/fb_image.php?start_date=<?php echo $start_date; ?>&end_date=<?php echo $end_date; ?>&summary=<?php echo urlencode($summary); ?>&location=<?php echo urlencode($location); ?>" alt="Glenn Bennett Performs">
+                    <img src="https://glennbennett.com/cal-image/<?php echo $share_hash; ?>" alt="Glenn Bennett Performs">
 
                 </div>
             </div>

@@ -61,6 +61,7 @@ $route['calendar'] = 'site/cal';
 $route['contact'] = 'contact/index';
 $route['contact/send'] = 'contact/send';
 $route['cal-image'] = 'site/cal_image';
+$route['cal-image/(:any)'] = 'site/cal_image/$1';
 
 // Admin routes
 $route['admin'] = 'admin/index';

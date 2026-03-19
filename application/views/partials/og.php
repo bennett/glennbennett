@@ -3,4 +3,4 @@
 <meta property="og:type"               content="article" />
 <meta property="og:title"              content="Performing @ <?php echo $summary; ?>" />
 <meta property="og:description"        content="<?php echo $date; ?> - <?php echo $time; ?>" />
-<meta property="og:image"              content="https://glennbennett.com/gcal/cal_image.php?a=<?php echo $a; ?>" /> 
+<meta property="og:image"              content="https://glennbennett.com/cal-image/<?php echo $share_hash; ?>" /> 

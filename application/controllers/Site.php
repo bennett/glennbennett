@@ -200,62 +200,67 @@ class Site extends CI_Controller {
         if(isset($_GET['a']) )
         {
             $a = $_GET['a'];
- 
+
             $a = urldecode($a);
-                
-    
+
+
             $json = base64_decode($a);
-            
-            
+
+
             // Check if the decoding was successful
             if ($json === false) {
                 // Handle the error, the data is not valid base64
                 echo 'The provided string is not valid base64 encoded data.';
             }
 //            ECHO $json;
-            
+
             $values = json_decode($json);
-            
-            
+
+
 //            var_dump($values);
             if($values == null)
             {
                 redirect('/cal', 'refresh');
             }
-            
-            
+
+
             foreach ($values as $key => $value)
             {
                 $$key = $value;
             }
-            
+
             //$week_day = "Monday";
             $week_day = date( "l", $start_date) ;
             //$date = "Monday - July 11, 2022";
             $date = date( "l - F d", $start_date );
             //$time = "5:30 pm - 8:00 pm";
             $time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
-            
+
             $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-    
+
             $today = date( "Y-m-d");
             $event_day = date( "Y-m-d", $start_date);
-            
+
+            // Generate short URL hash for share image
+            $this->load->model('share_image_model');
+            $share = $this->share_image_model->find_or_create($summary, $location, $start_date, $end_date);
+
             $data['a'] = $a;
+            $data['share_hash'] = $share->hash;
             $data['actual_link'] = $actual_link;
             $data['summary'] = $summary;
             $data['description'] = $description;
             $data['date'] = $date;
             $data['time'] = $time;
             $data['location'] = $location;
-            
+
             $data['title'] = "$summary";
             $data['sub_title'] = "$date - $time";
             $this->date_diff->days_diff($today, $event_day);
             $data['date_diff'] = $this->date_diff->days_diff_str( $today, $event_day );
-            
+
             $data['og'] = $this->load->view("partials/og.php", $data, true);
-            
+
             $this->layout_view('fb', $data);
         }
         else
@@ -794,10 +799,96 @@ public function build_data($featured_id = null)
 
 	// --- Calendar Event Image Generator ---
 
-	public function cal_image()
+	public function cal_image($hash = null)
 	{
 		date_default_timezone_set('America/Los_Angeles');
 
+		// --- Hash-based lookup from share_images table ---
+		if ($hash)
+		{
+			$this->load->model('share_image_model');
+			$this->load->model('template_model');
+			$this->load->library('cal_image_renderer');
+
+			$share = $this->share_image_model->get_by_hash($hash);
+			if ( ! $share)
+			{
+				show_404();
+				return;
+			}
+
+			$start_date = $share->start_date;
+			$end_date = $share->end_date;
+			$summary = $share->summary;
+			$location = $share->location;
+			$date = date("l - M d", $start_date);
+			$time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
+			$font_dir = FCPATH . 'fonts/';
+			$is_past = ($start_date < time());
+
+			$templates = $this->template_model->get_active_with_assets();
+			if ( ! empty($templates))
+			{
+				$day = (int) date("j", $start_date);
+				$idx = $day % count($templates);
+				$tpl = $templates[$idx];
+
+				$bg_file = FCPATH . 'imgs/template-backgrounds/' . $tpl->bg_filename;
+				$photo_file = FCPATH . 'imgs/template-photos/' . $tpl->photo_filename;
+
+				$layout_values = [
+					'photo_x'            => (int) $tpl->photo_x,
+					'photo_y'            => (int) $tpl->photo_y,
+					'photo_scale'        => (int) $tpl->photo_scale,
+					'photo_glow_radius'  => (int) $tpl->photo_glow_radius,
+					'photo_glow_color'   => $tpl->photo_glow_color,
+					'text_offset'        => (int) $tpl->text_offset,
+					'summary_font_size'  => (int) $tpl->summary_font_size,
+					'summary_margin_top' => (int) $tpl->summary_margin_top,
+					'date_font_size'     => (int) $tpl->date_font_size,
+					'date_margin_top'    => (int) $tpl->date_margin_top,
+					'time_font_size'     => (int) $tpl->time_font_size,
+					'time_margin_top'    => (int) $tpl->time_margin_top,
+					'location_font_size' => (int) $tpl->location_font_size,
+					'location_margin_top'=> (int) $tpl->location_margin_top,
+					'font_color'         => $tpl->font_color,
+					'glow_radius'        => (int) $tpl->glow_radius,
+					'glow_color'         => $tpl->glow_color,
+					'shadow_offset'      => (int) $tpl->shadow_offset,
+					'stroke_width'       => (int) $tpl->stroke_width,
+					'stroke_color'       => $tpl->stroke_color,
+				];
+
+				$texts = [
+					'summary'  => $summary,
+					'date'     => $date,
+					'time'     => $time,
+					'location' => $location,
+				];
+
+				if ($is_past && file_exists($bg_file) && file_exists($photo_file))
+				{
+					$im = $this->cal_image_renderer->render_expired($bg_file, $photo_file, $texts, $layout_values, $font_dir);
+				}
+				elseif (file_exists($bg_file) && file_exists($photo_file))
+				{
+					$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, $texts, $layout_values, $font_dir);
+				}
+			}
+
+			if ( ! isset($im) || ! $im)
+			{
+				show_error('Could not render image', 500);
+				return;
+			}
+
+			header('Content-type: image/jpeg');
+			imagepng($im);
+			imagedestroy($im);
+			return;
+		}
+
+		// --- Legacy query string behavior (unchanged) ---
 		$start_date = $this->input->get('start_date');
 		$end_date = $this->input->get('end_date');
 		$summary = $this->input->get('summary');
@@ -816,124 +907,178 @@ public function build_data($featured_id = null)
 		// --- Resolve image + layout from DB, fallback to config ---
 		$this->load->model('cal_image_model');
 		$this->load->model('venue_model');
-
-		$img_file = null;
-		$layout_values = null;
-
-		$images = $this->cal_image_model->get_active();
-
-		if ( ! empty($images))
-		{
-			$selected_image = null;
-
-			// Check for venue-specific images
-			if ($summary)
-			{
-				$venues = $this->venue_model->get_active_with_images();
-				$alpha_summary = strtoupper(preg_replace('/[^a-zA-Z]/', '', $summary));
-				$venue_image_ids = [];
-
-				foreach ($venues as $venue)
-				{
-					$match = false;
-
-					if ($venue->match_type === 'exact' && $summary === $venue->match_pattern)
-					{
-						$match = true;
-					}
-					elseif ($venue->match_type === 'contains' && strpos($summary, $venue->match_pattern) !== false)
-					{
-						$match = true;
-					}
-					elseif ($venue->match_type === 'alpha_only')
-					{
-						$alpha_pattern = strtoupper(preg_replace('/[^a-zA-Z]/', '', $venue->match_pattern));
-						if (strpos($alpha_summary, $alpha_pattern) !== false)
-						{
-							$match = true;
-						}
-					}
-
-					if ($match && ! empty($venue->images))
-					{
-						foreach ($venue->images as $vi)
-						{
-							$venue_image_ids[] = $vi->id;
-						}
-					}
-				}
-
-				if ( ! empty($venue_image_ids))
-				{
-					$day = (int) date("j", $start_date);
-					$idx = $day % count($venue_image_ids);
-					$selected_image = $this->cal_image_model->getById($venue_image_ids[$idx]);
-				}
-			}
-
-			// No venue match — use global pool
-			if ( ! $selected_image)
-			{
-				if ($forced_image !== null)
-				{
-					$idx = max(0, min($forced_image, count($images) - 1));
-				}
-				else
-				{
-					$day = (int) date("j", $start_date);
-					$idx = $day % count($images);
-				}
-				$selected_image = $images[$idx];
-			}
-
-			$img_file = FCPATH . $selected_image->image_path . $selected_image->filename;
-			$db_layout = $this->cal_image_model->get_layout($selected_image->id);
-
-			$layout_values = [
-				'text_offset'         => (int) $db_layout->text_offset,
-				'summary_font_size'   => (int) $db_layout->summary_font_size,
-				'summary_margin_top'  => (int) $db_layout->summary_margin_top,
-				'date_font_size'      => (int) $db_layout->date_font_size,
-				'date_margin_top'     => (int) $db_layout->date_margin_top,
-				'time_font_size'      => (int) $db_layout->time_font_size,
-				'time_margin_top'     => (int) $db_layout->time_margin_top,
-				'location_font_size'  => (int) $db_layout->location_font_size,
-				'location_margin_top' => (int) $db_layout->location_margin_top,
-			];
-		}
-		else
-		{
-			// Fallback to original config-file behavior
-			$no_of_bg_images = 25;
-
-			if ($forced_image !== null)
-			{
-				$image_no = max(0, min($forced_image, $no_of_bg_images - 1));
-			}
-			else
-			{
-				$image_no = date("j", $start_date);
-				$image_no = ($image_no % ($no_of_bg_images - 1)) - 1;
-				if ($image_no < 0) $image_no = 0;
-			}
-
-			$img_file = FCPATH . 'imgs/Cal-Event-' . $image_no . '.jpg';
-			$layout_values = [
-				'text_offset' => -200, 'summary_font_size' => 36, 'summary_margin_top' => 260,
-				'date_font_size' => 24, 'date_margin_top' => 25, 'time_font_size' => 36,
-				'time_margin_top' => 25, 'location_font_size' => 24, 'location_margin_top' => 25,
-			];
-		}
-
-		// Render using shared library
+		$this->load->model('template_model');
 		$this->load->library('cal_image_renderer');
 
-		$im = $this->cal_image_renderer->render($img_file, [
+		$texts = [
 			'summary'  => $summary,
 			'date'     => $date,
 			'time'     => $time,
 			'location' => $location,
-		], $layout_values, FCPATH . 'fonts/');
+		];
+		$font_dir = FCPATH . 'fonts/';
+		$im = null;
+
+		// --- Priority 1: New templates (background + photo composite) ---
+		$templates = $this->template_model->get_active_with_assets();
+
+		if ( ! empty($templates))
+		{
+			if ($forced_image !== null)
+			{
+				$idx = max(0, min($forced_image, count($templates) - 1));
+			}
+			else
+			{
+				$day = (int) date("j", $start_date);
+				$idx = $day % count($templates);
+			}
+			$tpl = $templates[$idx];
+
+			$bg_file = FCPATH . 'imgs/template-backgrounds/' . $tpl->bg_filename;
+			$photo_file = FCPATH . 'imgs/template-photos/' . $tpl->photo_filename;
+
+			if (file_exists($bg_file) && file_exists($photo_file))
+			{
+				$layout_values = [
+					'photo_x'            => (int) $tpl->photo_x,
+					'photo_y'            => (int) $tpl->photo_y,
+					'photo_scale'        => (int) $tpl->photo_scale,
+					'photo_glow_radius'  => (int) $tpl->photo_glow_radius,
+					'photo_glow_color'   => $tpl->photo_glow_color,
+					'text_offset'        => (int) $tpl->text_offset,
+					'summary_font_size'  => (int) $tpl->summary_font_size,
+					'summary_margin_top' => (int) $tpl->summary_margin_top,
+					'date_font_size'     => (int) $tpl->date_font_size,
+					'date_margin_top'    => (int) $tpl->date_margin_top,
+					'time_font_size'     => (int) $tpl->time_font_size,
+					'time_margin_top'    => (int) $tpl->time_margin_top,
+					'location_font_size' => (int) $tpl->location_font_size,
+					'location_margin_top'=> (int) $tpl->location_margin_top,
+					'font_color'         => $tpl->font_color,
+					'glow_radius'        => (int) $tpl->glow_radius,
+					'glow_color'         => $tpl->glow_color,
+					'shadow_offset'      => (int) $tpl->shadow_offset,
+					'stroke_width'       => (int) $tpl->stroke_width,
+					'stroke_color'       => $tpl->stroke_color,
+				];
+
+				$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, $texts, $layout_values, $font_dir);
+			}
+		}
+
+		// --- Priority 2: Old cal_images system ---
+		if ( ! $im)
+		{
+			$img_file = null;
+			$layout_values = null;
+			$images = $this->cal_image_model->get_active();
+
+			if ( ! empty($images))
+			{
+				$selected_image = null;
+
+				// Check for venue-specific images
+				if ($summary)
+				{
+					$venues = $this->venue_model->get_active_with_images();
+					$alpha_summary = strtoupper(preg_replace('/[^a-zA-Z]/', '', $summary));
+					$venue_image_ids = [];
+
+					foreach ($venues as $venue)
+					{
+						$match = false;
+
+						if ($venue->match_type === 'exact' && $summary === $venue->match_pattern)
+						{
+							$match = true;
+						}
+						elseif ($venue->match_type === 'contains' && strpos($summary, $venue->match_pattern) !== false)
+						{
+							$match = true;
+						}
+						elseif ($venue->match_type === 'alpha_only')
+						{
+							$alpha_pattern = strtoupper(preg_replace('/[^a-zA-Z]/', '', $venue->match_pattern));
+							if (strpos($alpha_summary, $alpha_pattern) !== false)
+							{
+								$match = true;
+							}
+						}
+
+						if ($match && ! empty($venue->images))
+						{
+							foreach ($venue->images as $vi)
+							{
+								$venue_image_ids[] = $vi->id;
+							}
+						}
+					}
+
+					if ( ! empty($venue_image_ids))
+					{
+						$day = (int) date("j", $start_date);
+						$idx = $day % count($venue_image_ids);
+						$selected_image = $this->cal_image_model->getById($venue_image_ids[$idx]);
+					}
+				}
+
+				// No venue match — use global pool
+				if ( ! $selected_image)
+				{
+					if ($forced_image !== null)
+					{
+						$idx = max(0, min($forced_image, count($images) - 1));
+					}
+					else
+					{
+						$day = (int) date("j", $start_date);
+						$idx = $day % count($images);
+					}
+					$selected_image = $images[$idx];
+				}
+
+				$img_file = FCPATH . $selected_image->image_path . $selected_image->filename;
+				$db_layout = $this->cal_image_model->get_layout($selected_image->id);
+
+				$layout_values = [
+					'text_offset'         => (int) $db_layout->text_offset,
+					'summary_font_size'   => (int) $db_layout->summary_font_size,
+					'summary_margin_top'  => (int) $db_layout->summary_margin_top,
+					'date_font_size'      => (int) $db_layout->date_font_size,
+					'date_margin_top'     => (int) $db_layout->date_margin_top,
+					'time_font_size'      => (int) $db_layout->time_font_size,
+					'time_margin_top'     => (int) $db_layout->time_margin_top,
+					'location_font_size'  => (int) $db_layout->location_font_size,
+					'location_margin_top' => (int) $db_layout->location_margin_top,
+				];
+			}
+			else
+			{
+				// Fallback to original config-file behavior
+				$no_of_bg_images = 25;
+
+				if ($forced_image !== null)
+				{
+					$image_no = max(0, min($forced_image, $no_of_bg_images - 1));
+				}
+				else
+				{
+					$image_no = date("j", $start_date);
+					$image_no = ($image_no % ($no_of_bg_images - 1)) - 1;
+					if ($image_no < 0) $image_no = 0;
+				}
+
+				$img_file = FCPATH . 'imgs/Cal-Event-' . $image_no . '.jpg';
+				$layout_values = [
+					'text_offset' => -200, 'summary_font_size' => 36, 'summary_margin_top' => 260,
+					'date_font_size' => 24, 'date_margin_top' => 25, 'time_font_size' => 36,
+					'time_margin_top' => 25, 'location_font_size' => 24, 'location_margin_top' => 25,
+				];
+			}
+
+			$im = $this->cal_image_renderer->render($img_file, $texts, $layout_values, $font_dir);
+		}
 
 		if ( ! $im)
 		{

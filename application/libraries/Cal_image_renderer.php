@@ -245,6 +245,93 @@ class Cal_image_renderer {
         $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $font_bold, 'font_size' => 22], $text_offset, $text_color);
     }
 
+    /**
+     * Render an "event has passed" image using stored event data
+     */
+    public function render_expired($bg_file, $photo_file, $texts, $layout, $font_dir)
+    {
+        // Reuse template rendering for the background + photo composite
+        $this->im = @imagecreatefromjpeg($bg_file);
+        if (!$this->im) {
+            $this->im = @imagecreatefrompng($bg_file);
+        }
+        if (!$this->im) {
+            return false;
+        }
+
+        $this->image_width = imagesx($this->im);
+        $this->image_height = imagesy($this->im);
+
+        imagealphablending($this->im, true);
+
+        // Load photo PNG
+        $photo = @imagecreatefrompng($photo_file);
+        if ($photo) {
+            imagealphablending($photo, true);
+            imagesavealpha($photo, true);
+
+            $photo_w = imagesx($photo);
+            $photo_h = imagesy($photo);
+
+            $scale = isset($layout['photo_scale']) ? (int) $layout['photo_scale'] : 100;
+            $new_w = (int) ($photo_w * $scale / 100);
+            $new_h = (int) ($photo_h * $scale / 100);
+
+            $photo_x = isset($layout['photo_x']) ? (int) $layout['photo_x'] : 0;
+            $photo_y = isset($layout['photo_y']) ? (int) $layout['photo_y'] : 0;
+
+            imagecopyresampled($this->im, $photo, $photo_x, $photo_y, 0, 0, $new_w, $new_h, $photo_w, $photo_h);
+            imagedestroy($photo);
+        }
+
+        // Set up text rendering properties from layout
+        $hex = isset($layout['font_color']) ? ltrim($layout['font_color'], '#') : '000000';
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $text_color = imagecolorallocate($this->im, $r, $g, $b);
+
+        $text_offset = isset($layout['text_offset']) ? (int) $layout['text_offset'] : -200;
+        $this->glow_radius = isset($layout['glow_radius']) ? (int) $layout['glow_radius'] : 0;
+        $this->shadow_offset = isset($layout['shadow_offset']) ? (int) $layout['shadow_offset'] : 0;
+
+        $glow_hex = isset($layout['glow_color']) ? ltrim($layout['glow_color'], '#') : 'ffffff';
+        $this->glow_color = [hexdec(substr($glow_hex, 0, 2)), hexdec(substr($glow_hex, 2, 2)), hexdec(substr($glow_hex, 4, 2))];
+
+        $this->stroke_width = isset($layout['stroke_width']) ? (int) $layout['stroke_width'] : 0;
+        $stroke_hex = isset($layout['stroke_color']) ? ltrim($layout['stroke_color'], '#') : '000000';
+        $this->stroke_color_rgb = [hexdec(substr($stroke_hex, 0, 2)), hexdec(substr($stroke_hex, 2, 2)), hexdec(substr($stroke_hex, 4, 2))];
+
+        $font_bold = $font_dir . 'GEORGIAB.TTF';
+        $font_title = $font_dir . 'Aladin-Regular.ttf';
+
+        $summary_font_size = isset($layout['summary_font_size']) ? (int) $layout['summary_font_size'] : 36;
+
+        // Start text block
+        $this->y = isset($layout['summary_margin_top']) ? (int) $layout['summary_margin_top'] : 260;
+
+        // "Glenn Bennett" / "Performs" header
+        $this->print_line(['text' => 'Glenn Bennett', 'font' => $font_title, 'font_size' => 72], $text_offset, $text_color);
+        $this->print_line(['text' => 'Performs', 'font' => $font_title, 'font_size' => 48], $text_offset, $text_color);
+        $this->y += 30;
+
+        // Event summary
+        $this->print_line(['text' => $texts['summary'], 'font' => $font_bold, 'font_size' => $summary_font_size], $text_offset, $text_color);
+
+        // Event date
+        $this->print_line(['text' => $texts['date'], 'font' => $font_bold, 'font_size' => 24], $text_offset, $text_color);
+        $this->y += 30;
+
+        // "This event has passed" message
+        $this->print_line(['text' => 'This event has passed', 'font' => $font_bold, 'font_size' => 32], $text_offset, $text_color);
+        $this->y += 30;
+
+        // Footer
+        $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $font_bold, 'font_size' => 22], $text_offset, $text_color);
+
+        return $this->im;
+    }
+
     private function print_line($msg, $offset, $color)
     {
         $lines = $this->get_lines($msg['text']);

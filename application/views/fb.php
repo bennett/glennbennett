@@ -24,7 +24,7 @@ $(document).ready(function(){
             <h4 class="mb-0"><?php echo $date_diff; ?></h4>
             <strong text-center><?php echo $location; ?></strong><hr>
             
-            <img  src="https://glennbennett.com/gcal/cal_image.php?a=<?php echo $a; ?>" alt="Glenn Bennett Performs">
+            <img  src="https://glennbennett.com/cal-image/<?php echo $share_hash; ?>" alt="Glenn Bennett Performs">
         
         </div>
     
