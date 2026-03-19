@@ -9,9 +9,13 @@
         </div>
         <h3 class="text-center">Log in</h3>
 
-        <?php if ( ! empty($this->session->flashdata('alert'))): ?>
-            <div class="alert alert-<?php echo $this->session->flashdata('alert-type'); ?>">
-                <p><?php echo $this->session->flashdata('alert') ?></p>
+        <?php
+            $alert = $this->session->flashdata('alert');
+            $alert_type = $this->session->flashdata('alert-type');
+            if ( ! empty($alert)):
+        ?>
+            <div class="alert alert-<?php echo $alert_type; ?>">
+                <p><?php echo $alert ?></p>
             </div>
         <?php endif; ?>
 
@@ -25,9 +29,13 @@
             </div>
 
             <div class="form-group has-feedback">
-                <input type="password" class="form-control" placeholder="Password" name="password">
+                <input type="password" class="form-control" placeholder="Password" name="password" id="password">
                 <span class="fa fa-lock form-control-feedback"></span>
                 <?php echo form_error('password', '<div class="text-danger">', '</div>'); ?>
+            </div>
+
+            <div class="checkbox">
+                <label><input type="checkbox" onclick="var p=document.getElementById('password');p.type=p.type==='password'?'text':'password'"> Show password</label>
             </div>
 
             <div class="row">
@@ -38,6 +46,14 @@
             </div>
 
         <?php echo form_close(); ?>
+
+        <?php if ( ! empty($google_enabled)): ?>
+            <div class="text-center" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                <a href="<?php echo site_url('admin/login/google'); ?>" class="btn btn-default btn-block btn-flat">
+                    <i class="fa fa-google"></i> Sign in with Google
+                </a>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

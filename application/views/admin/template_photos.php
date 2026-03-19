@@ -3,7 +3,7 @@
 <?php include VIEWPATH . 'admin/includes/header.php'; ?>
 
 <section class="content-header">
-    <h1>Calendar Images <small>Manage background images</small></h1>
+    <h1>Template Photos <small>Manage PNG cutouts for share templates</small></h1>
 </section>
 
 <section class="content">
@@ -11,15 +11,15 @@
     <!-- Upload Form -->
     <div class="box box-primary">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-upload"></i> Upload New Image</h3>
+            <h3 class="box-title"><i class="fa fa-upload"></i> Upload New Photo</h3>
         </div>
         <div class="box-body">
-            <?php echo form_open_multipart('admin/upload_image'); ?>
+            <?php echo form_open_multipart('admin/upload_template_photo'); ?>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="image_file">Select Image (JPG/PNG, max 5MB)</label>
-                            <input type="file" name="image_file" id="image_file" class="form-control" accept=".jpg,.jpeg,.png" required>
+                            <label for="image_file">Select PNG (transparent cutout, max 5MB)</label>
+                            <input type="file" name="image_file" id="image_file" class="form-control" accept=".png" required>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -33,45 +33,47 @@
         </div>
     </div>
 
-    <!-- Image Grid -->
+    <!-- Grid -->
     <div class="box">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-th"></i> Image Library (<?php echo count($images) ?>)</h3>
+            <h3 class="box-title"><i class="fa fa-th"></i> Photos (<?php echo count($photos) ?>)</h3>
         </div>
         <div class="box-body">
-            <?php if (empty($images)): ?>
-                <p class="text-muted">No images uploaded yet.</p>
+            <?php if (empty($photos)): ?>
+                <p class="text-muted">No photos uploaded yet.</p>
             <?php else: ?>
                 <div class="row">
-                    <?php foreach ($images as $image): ?>
-                        <div class="col-md-6 col-sm-6 col-xs-12" style="margin-bottom: 20px;">
+                    <?php foreach ($photos as $photo): ?>
+                        <div class="col-md-3 col-sm-4 col-xs-6" style="margin-bottom: 20px;">
                             <div class="thumbnail" style="position: relative;">
-                                <img src="<?php echo site_url('admin/preview_image/' . $image->id) ?>"
-                                     alt="<?php echo htmlspecialchars($image->original_name) ?>"
-                                     style="width: 100%; height: auto;">
+                                <div style="background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 50% / 20px 20px; min-height: 150px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="<?php echo base_url('imgs/template-photos/' . $photo->filename) ?>"
+                                         alt="<?php echo htmlspecialchars($photo->original_name) ?>"
+                                         style="max-width: 100%; max-height: 200px;">
+                                </div>
 
                                 <div class="caption">
                                     <p style="margin-bottom: 5px;">
-                                        <strong style="font-size: 14px;"><?php echo htmlspecialchars($image->original_name) ?></strong><br>
-                                        <span class="text-muted" style="font-size: 11px;"><?php echo $image->width ?>x<?php echo $image->height ?></span>
+                                        <strong><?php echo htmlspecialchars($photo->original_name) ?></strong><br>
+                                        <span class="text-muted" style="font-size: 11px;"><?php echo $photo->width ?>x<?php echo $photo->height ?></span>
                                     </p>
 
                                     <div style="margin-top: 10px;">
-                                        <a href="<?php echo site_url('admin/image_layout/' . $image->id) ?>"
-                                           class="btn btn-xs btn-info" title="Edit Layout">
-                                            <i class="fa fa-sliders"></i> Customize
+                                        <a href="<?php echo site_url('admin/template_photo_defaults/' . $photo->id) ?>"
+                                           class="btn btn-xs btn-info" title="Edit Position Defaults">
+                                            <i class="fa fa-arrows"></i> Defaults
                                         </a>
 
-                                        <button class="btn btn-xs toggle-btn <?php echo $image->is_active ? 'btn-success' : 'btn-default' ?>"
-                                                data-id="<?php echo $image->id ?>"
+                                        <button class="btn btn-xs toggle-btn <?php echo $photo->is_active ? 'btn-success' : 'btn-default' ?>"
+                                                data-id="<?php echo $photo->id ?>"
                                                 title="Toggle Active">
-                                            <i class="fa <?php echo $image->is_active ? 'fa-check-circle' : 'fa-circle-o' ?>"></i>
-                                            <?php echo $image->is_active ? 'Active' : 'Inactive' ?>
+                                            <i class="fa <?php echo $photo->is_active ? 'fa-check-circle' : 'fa-circle-o' ?>"></i>
+                                            <?php echo $photo->is_active ? 'Active' : 'Inactive' ?>
                                         </button>
 
-                                        <a href="<?php echo site_url('admin/delete_image/' . $image->id) ?>"
+                                        <a href="<?php echo site_url('admin/delete_template_photo/' . $photo->id) ?>"
                                            class="btn btn-xs btn-danger"
-                                           onclick="return confirm('Delete this image?')"
+                                           onclick="return confirm('Delete this photo? All templates using it will also be deleted.')"
                                            title="Delete">
                                             <i class="fa fa-trash"></i>
                                         </a>
@@ -94,7 +96,7 @@ $(document).ready(function() {
         var id = $btn.data('id');
 
         $.ajax({
-            url: '<?php echo site_url("admin/toggle_image/") ?>' + id,
+            url: '<?php echo site_url("admin/toggle_template_photo/") ?>' + id,
             type: 'POST',
             dataType: 'json',
             success: function(resp) {

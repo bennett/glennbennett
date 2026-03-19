@@ -9,7 +9,7 @@
 <section class="content">
 
     <div class="row">
-        <!-- GD Preview -->
+        <!-- Preview -->
         <div class="col-md-7">
             <div class="box box-primary">
                 <div class="box-header with-border">
@@ -22,15 +22,11 @@
                     <div id="loadingOverlay" style="display: none; padding: 10px;">
                         <i class="fa fa-spinner fa-spin"></i> Rendering...
                     </div>
-                    <br><br>
-                    <a href="<?php echo site_url('admin/images') ?>" class="btn btn-default">
-                        <i class="fa fa-arrow-left"></i> Back to Images
-                    </a>
                 </div>
             </div>
         </div>
 
-        <!-- Slider Controls -->
+        <!-- Controls -->
         <div class="col-md-5">
             <div class="box box-warning">
                 <div class="box-header with-border">
@@ -38,52 +34,34 @@
                 </div>
                 <div class="box-body">
                     <div class="form-group">
-                        <label>Text Offset (horizontal shift): <span id="val_text_offset"><?php echo $layout->text_offset ?></span>px</label>
-                        <input type="range" id="text_offset" min="-400" max="400" value="<?php echo $layout->text_offset ?>" class="form-control slider">
-                    </div>
-
-                    <hr>
-                    <h4>Summary</h4>
-                    <div class="form-group">
-                        <label>Font Size: <span id="val_summary_font_size"><?php echo $layout->summary_font_size ?></span>px</label>
-                        <input type="range" id="summary_font_size" min="12" max="72" value="<?php echo $layout->summary_font_size ?>" class="form-control slider">
+                        <label>Horizontal Offset: <span id="val_text_offset"><?php echo $layout->text_offset ?></span>px</label>
+                        <input type="range" id="text_offset" min="-400" max="400" value="<?php echo $layout->text_offset ?>" class="layout-range" style="width:100%">
                     </div>
                     <div class="form-group">
-                        <label>Margin Top (Y start): <span id="val_summary_margin_top"><?php echo $layout->summary_margin_top ?></span>px</label>
-                        <input type="range" id="summary_margin_top" min="20" max="500" value="<?php echo $layout->summary_margin_top ?>" class="form-control slider">
-                    </div>
-
-                    <hr>
-                    <h4>Date</h4>
-                    <div class="form-group">
-                        <label>Font Size: <span id="val_date_font_size"><?php echo $layout->date_font_size ?></span>px</label>
-                        <input type="range" id="date_font_size" min="12" max="72" value="<?php echo $layout->date_font_size ?>" class="form-control slider">
+                        <label>Vertical Position: <span id="val_summary_margin_top"><?php echo $layout->summary_margin_top ?></span>px</label>
+                        <input type="range" id="summary_margin_top" min="20" max="500" value="<?php echo $layout->summary_margin_top ?>" class="layout-range" style="width:100%">
                     </div>
                     <div class="form-group">
-                        <label>Margin Top: <span id="val_date_margin_top"><?php echo $layout->date_margin_top ?></span>px</label>
-                        <input type="range" id="date_margin_top" min="0" max="100" value="<?php echo $layout->date_margin_top ?>" class="form-control slider">
-                    </div>
-
-                    <hr>
-                    <h4>Time</h4>
-                    <div class="form-group">
-                        <label>Font Size: <span id="val_time_font_size"><?php echo $layout->time_font_size ?></span>px</label>
-                        <input type="range" id="time_font_size" min="12" max="72" value="<?php echo $layout->time_font_size ?>" class="form-control slider">
+                        <label>Font Color</label><br>
+                        <input type="color" id="font_color" value="<?php echo $layout->font_color ?: '#000000' ?>" class="layout-color" style="width: 60px; height: 34px; padding: 2px; cursor: pointer;">
                     </div>
                     <div class="form-group">
-                        <label>Margin Top: <span id="val_time_margin_top"><?php echo $layout->time_margin_top ?></span>px</label>
-                        <input type="range" id="time_margin_top" min="0" max="100" value="<?php echo $layout->time_margin_top ?>" class="form-control slider">
-                    </div>
-
-                    <hr>
-                    <h4>Location</h4>
-                    <div class="form-group">
-                        <label>Font Size: <span id="val_location_font_size"><?php echo $layout->location_font_size ?></span>px</label>
-                        <input type="range" id="location_font_size" min="12" max="72" value="<?php echo $layout->location_font_size ?>" class="form-control slider">
+                        <label>Glow: <span id="val_glow_radius"><?php echo $layout->glow_radius ?></span>px</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="glow_radius" min="0" max="10" value="<?php echo $layout->glow_radius ?>" class="layout-range" style="flex: 1;">
+                            <input type="color" id="glow_color" value="<?php echo $layout->glow_color ?: '#ffffff' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Margin Top: <span id="val_location_margin_top"><?php echo $layout->location_margin_top ?></span>px</label>
-                        <input type="range" id="location_margin_top" min="0" max="100" value="<?php echo $layout->location_margin_top ?>" class="form-control slider">
+                        <label>Stroke: <span id="val_stroke_width"><?php echo $layout->stroke_width ?></span>px</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="range" id="stroke_width" min="0" max="6" value="<?php echo $layout->stroke_width ?>" class="layout-range" style="flex: 1;">
+                            <input type="color" id="stroke_color" value="<?php echo $layout->stroke_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Shadow: <span id="val_shadow_offset"><?php echo $layout->shadow_offset ?></span>px</label>
+                        <input type="range" id="shadow_offset" min="0" max="8" value="<?php echo $layout->shadow_offset ?>" class="layout-range" style="width:100%">
                     </div>
 
                     <hr>
@@ -91,6 +69,10 @@
                         <i class="fa fa-save"></i> Save & Preview
                     </button>
                     <div id="saveStatus" style="margin-top: 10px;"></div>
+                    <hr>
+                    <a href="<?php echo site_url('admin/images') ?>" class="btn btn-default btn-block">
+                        <i class="fa fa-arrow-left"></i> Back to Images
+                    </a>
                 </div>
             </div>
         </div>
@@ -100,42 +82,67 @@
 
 <script>
 $(document).ready(function() {
+    var previewUrl = '<?php echo site_url("admin/preview_image/" . $image->id) ?>';
+    var debounceTimer = null;
+
     function getVal(id) {
         return parseInt($('#' + id).val());
     }
 
-    // Update label on slider change
-    $('.slider').on('input', function() {
-        var id = $(this).attr('id');
-        $('#val_' + id).text($(this).val());
+    function refreshPreview() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(function() {
+            var src = previewUrl
+                + '?text_offset=' + getVal('text_offset')
+                + '&summary_margin_top=' + getVal('summary_margin_top')
+                + '&glow_radius=' + getVal('glow_radius')
+                + '&shadow_offset=' + getVal('shadow_offset')
+                + '&font_color=' + encodeURIComponent($('#font_color').val())
+                + '&glow_color=' + encodeURIComponent($('#glow_color').val())
+                + '&stroke_width=' + getVal('stroke_width')
+                + '&stroke_color=' + encodeURIComponent($('#stroke_color').val())
+                + '&t=' + Date.now();
+            $('#previewImage').attr('src', src);
+        }, 300);
+    }
+
+    // Live preview on slider move
+    $('.layout-range').on('input change', function() {
+        $('#val_' + $(this).attr('id')).text($(this).val());
+        refreshPreview();
     });
 
-    // Save via AJAX then reload the GD preview
+    // Live preview on color change
+    $('.layout-color').on('input change', function() {
+        refreshPreview();
+    });
+
+    // Save to database
     $('#saveLayout').click(function() {
         var data = {
-            cal_image_id: <?php echo $image->id ?>,
-            text_offset: getVal('text_offset'),
-            summary_font_size: getVal('summary_font_size'),
-            summary_margin_top: getVal('summary_margin_top'),
-            date_font_size: getVal('date_font_size'),
-            date_margin_top: getVal('date_margin_top'),
-            time_font_size: getVal('time_font_size'),
-            time_margin_top: getVal('time_margin_top'),
-            location_font_size: getVal('location_font_size'),
-            location_margin_top: getVal('location_margin_top')
+            cal_image_id:         <?php echo $image->id ?>,
+            text_offset:          getVal('text_offset'),
+            summary_margin_top:   getVal('summary_margin_top'),
+            summary_font_size:    <?php echo (int) $layout->summary_font_size ?>,
+            date_font_size:       <?php echo (int) $layout->date_font_size ?>,
+            date_margin_top:      <?php echo (int) $layout->date_margin_top ?>,
+            time_font_size:       <?php echo (int) $layout->time_font_size ?>,
+            time_margin_top:      <?php echo (int) $layout->time_margin_top ?>,
+            location_font_size:   <?php echo (int) $layout->location_font_size ?>,
+            location_margin_top:  <?php echo (int) $layout->location_margin_top ?>,
+            glow_radius:          getVal('glow_radius'),
+            shadow_offset:        getVal('shadow_offset'),
+            font_color:           $('#font_color').val(),
+            glow_color:           $('#glow_color').val(),
+            stroke_width:         getVal('stroke_width'),
+            stroke_color:         $('#stroke_color').val()
         };
 
-        $('#loadingOverlay').show();
-
-        $.post('<?php echo site_url("admin/save_layout") ?>', data, function(resp) {
-            // Reload preview image from server (cache-bust with timestamp)
-            $('#previewImage').attr('src', '<?php echo site_url("admin/preview_image/" . $image->id) ?>?t=' + Date.now());
+        $.post('<?php echo site_url("admin/save_layout") ?>', data, function() {
             $('#saveStatus').html('<div class="alert alert-success">Layout saved!</div>');
             setTimeout(function() { $('#saveStatus').html(''); }, 3000);
         }).fail(function() {
             $('#saveStatus').html('<div class="alert alert-danger">Save failed.</div>');
-        }).always(function() {
-            $('#loadingOverlay').hide();
         });
     });
 });

@@ -7,6 +7,17 @@ class Admin_user_model extends MY_Model {
 
 	public function attempt($username, $password)
 	{
+		// Check .env credentials first (local dev login)
+		$env_user = getenv('ADMIN_USERNAME') ?: ($_ENV['ADMIN_USERNAME'] ?? '');
+		$env_pass = getenv('ADMIN_PASSWORD') ?: ($_ENV['ADMIN_PASSWORD'] ?? '');
+
+		if ($env_user && $env_pass && $username === $env_user && $password === $env_pass)
+		{
+			$user = $this->db->get_where($this->table, ['id' => 1])->row();
+			if ($user) return $user;
+		}
+
+		// Fall back to database credentials
 		$user = $this->db->get_where($this->table, ['username' => $username])->row();
 
 		if ( ! $user)

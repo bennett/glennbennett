@@ -10,6 +10,9 @@ class Admin extends Admin_Controller {
 		parent::__construct();
 		$this->load->model('cal_image_model');
 		$this->load->model('venue_model');
+		$this->load->model('template_background_model');
+		$this->load->model('template_photo_model');
+		$this->load->model('template_model');
 	}
 
 	public function index()
@@ -78,17 +81,30 @@ class Admin extends Admin_Controller {
 	{
 		$image = $this->cal_image_model->getById($id);
 
-		if ($image)
+		if ( ! $image)
 		{
-			$this->cal_image_model->update($id, [
-				'is_active' => $image->is_active ? 0 : 1
-			]);
-
-			$status = $image->is_active ? 'deactivated' : 'activated';
-			$this->session->set_flashdata('alert', "Image {$status}.");
-			$this->session->set_flashdata('alert-type', 'success');
+			if ($this->input->is_ajax_request())
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error']));
+				return;
+			}
+			redirect('admin/images', 'refresh');
 		}
 
+		$new_state = $image->is_active ? 0 : 1;
+		$this->cal_image_model->update($id, ['is_active' => $new_state]);
+
+		if ($this->input->is_ajax_request())
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'ok', 'is_active' => $new_state]));
+			return;
+		}
+
+		$status = $image->is_active ? 'deactivated' : 'activated';
+		$this->session->set_flashdata('alert', "Image {$status}.");
+		$this->session->set_flashdata('alert-type', 'success');
 		redirect('admin/images', 'refresh');
 	}
 
@@ -147,6 +163,12 @@ class Admin extends Admin_Controller {
 			'time_margin_top'     => (int) $this->input->post('time_margin_top'),
 			'location_font_size'  => (int) $this->input->post('location_font_size'),
 			'location_margin_top' => (int) $this->input->post('location_margin_top'),
+			'glow_radius'        => (int) $this->input->post('glow_radius'),
+			'shadow_offset'      => (int) $this->input->post('shadow_offset'),
+			'font_color'         => $this->input->post('font_color'),
+			'glow_color'         => $this->input->post('glow_color'),
+			'stroke_width'       => (int) $this->input->post('stroke_width'),
+			'stroke_color'       => $this->input->post('stroke_color'),
 		];
 
 		$this->cal_image_model->save_layout($image_id, $layout_data);
@@ -175,21 +197,53 @@ class Admin extends Admin_Controller {
 
 		$this->load->library('cal_image_renderer');
 
+		// Allow query string overrides for live preview
+		$text_offset = $this->input->get('text_offset') !== null
+			? (int) $this->input->get('text_offset')
+			: (int) $layout->text_offset;
+		$summary_margin_top = $this->input->get('summary_margin_top') !== null
+			? (int) $this->input->get('summary_margin_top')
+			: (int) $layout->summary_margin_top;
+		$glow_radius = $this->input->get('glow_radius') !== null
+			? (int) $this->input->get('glow_radius')
+			: (int) $layout->glow_radius;
+		$shadow_offset = $this->input->get('shadow_offset') !== null
+			? (int) $this->input->get('shadow_offset')
+			: (int) $layout->shadow_offset;
+		$font_color = $this->input->get('font_color') !== null
+			? $this->input->get('font_color')
+			: $layout->font_color;
+		$glow_color = $this->input->get('glow_color') !== null
+			? $this->input->get('glow_color')
+			: $layout->glow_color;
+		$stroke_width = $this->input->get('stroke_width') !== null
+			? (int) $this->input->get('stroke_width')
+			: (int) $layout->stroke_width;
+		$stroke_color = $this->input->get('stroke_color') !== null
+			? $this->input->get('stroke_color')
+			: $layout->stroke_color;
+
 		$im = $this->cal_image_renderer->render($img_file, [
 			'summary'  => 'Sample Venue Name',
 			'date'     => 'Saturday - Mar 14',
 			'time'     => '10:00 am - 1:00 pm',
 			'location' => '123 Main St, Anytown, CA',
 		], [
-			'text_offset'         => (int) $layout->text_offset,
+			'text_offset'         => $text_offset,
 			'summary_font_size'   => (int) $layout->summary_font_size,
-			'summary_margin_top'  => (int) $layout->summary_margin_top,
+			'summary_margin_top'  => $summary_margin_top,
 			'date_font_size'      => (int) $layout->date_font_size,
 			'date_margin_top'     => (int) $layout->date_margin_top,
 			'time_font_size'      => (int) $layout->time_font_size,
 			'time_margin_top'     => (int) $layout->time_margin_top,
 			'location_font_size'  => (int) $layout->location_font_size,
 			'location_margin_top' => (int) $layout->location_margin_top,
+			'glow_radius'        => $glow_radius,
+			'shadow_offset'      => $shadow_offset,
+			'font_color'         => $font_color,
+			'glow_color'         => $glow_color,
+			'stroke_width'       => $stroke_width,
+			'stroke_color'       => $stroke_color,
 		], FCPATH . 'fonts/');
 
 		if ( ! $im)
@@ -325,6 +379,576 @@ class Admin extends Admin_Controller {
 		$this->session->set_flashdata('alert', 'Venue deleted.');
 		$this->session->set_flashdata('alert-type', 'success');
 		redirect('admin/venues', 'refresh');
+	}
+
+	// --- Template Backgrounds ---
+
+	public function template_backgrounds()
+	{
+		$this->page_data['page']->title = 'Template Backgrounds';
+		$this->page_data['page']->menu = 'template_backgrounds';
+
+		$this->page_data['backgrounds'] = $this->template_background_model->get();
+
+		$this->load->view('admin/template_backgrounds', $this->page_data);
+	}
+
+	public function upload_template_background()
+	{
+		$config['upload_path']   = FCPATH . 'imgs/template-backgrounds/';
+		$config['allowed_types'] = 'jpg|jpeg|png';
+		$config['max_size']      = 5120;
+		$config['encrypt_name']  = TRUE;
+
+		$this->load->library('upload', $config);
+
+		if ( ! $this->upload->do_upload('image_file'))
+		{
+			$this->session->set_flashdata('alert', $this->upload->display_errors('', ''));
+			$this->session->set_flashdata('alert-type', 'danger');
+		}
+		else
+		{
+			$upload = $this->upload->data();
+
+			$bg_id = $this->template_background_model->create([
+				'filename'      => $upload['file_name'],
+				'original_name' => $upload['orig_name'],
+				'width'         => $upload['image_width'],
+				'height'        => $upload['image_height'],
+			]);
+
+			$this->template_model->generate_for_background($bg_id);
+
+			$this->session->set_flashdata('alert', 'Background uploaded successfully.');
+			$this->session->set_flashdata('alert-type', 'success');
+		}
+
+		redirect('admin/template_backgrounds', 'refresh');
+	}
+
+	public function toggle_template_background($id)
+	{
+		$bg = $this->template_background_model->getById($id);
+
+		if ( ! $bg)
+		{
+			if ($this->input->is_ajax_request())
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error']));
+				return;
+			}
+			redirect('admin/template_backgrounds', 'refresh');
+		}
+
+		$new_state = $bg->is_active ? 0 : 1;
+		$this->template_background_model->update($id, ['is_active' => $new_state]);
+
+		if ($this->input->is_ajax_request())
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'ok', 'is_active' => $new_state]));
+			return;
+		}
+
+		redirect('admin/template_backgrounds', 'refresh');
+	}
+
+	public function delete_template_background($id)
+	{
+		$bg = $this->template_background_model->getById($id);
+
+		if ($bg)
+		{
+			$file_path = FCPATH . 'imgs/template-backgrounds/' . $bg->filename;
+			if (file_exists($file_path))
+			{
+				unlink($file_path);
+			}
+			$this->template_background_model->delete($id);
+
+			$this->session->set_flashdata('alert', 'Background deleted.');
+			$this->session->set_flashdata('alert-type', 'success');
+		}
+
+		redirect('admin/template_backgrounds', 'refresh');
+	}
+
+	public function template_background_defaults($id)
+	{
+		$bg = $this->template_background_model->getById($id);
+
+		if ( ! $bg)
+		{
+			redirect('admin/template_backgrounds', 'refresh');
+		}
+
+		$this->page_data['page']->title = 'Background Text Defaults';
+		$this->page_data['page']->menu = 'template_backgrounds';
+		$this->page_data['background'] = $bg;
+
+		$this->load->view('admin/template_background_defaults', $this->page_data);
+	}
+
+	public function save_template_background_defaults()
+	{
+		$id = $this->input->post('background_id');
+
+		$data = [
+			'text_offset'         => (int) $this->input->post('text_offset'),
+			'summary_margin_top'  => (int) $this->input->post('summary_margin_top'),
+			'summary_font_size'   => (int) $this->input->post('summary_font_size'),
+			'date_font_size'      => (int) $this->input->post('date_font_size'),
+			'date_margin_top'     => (int) $this->input->post('date_margin_top'),
+			'time_font_size'      => (int) $this->input->post('time_font_size'),
+			'time_margin_top'     => (int) $this->input->post('time_margin_top'),
+			'location_font_size'  => (int) $this->input->post('location_font_size'),
+			'location_margin_top' => (int) $this->input->post('location_margin_top'),
+			'font_color'          => $this->input->post('font_color'),
+			'glow_radius'         => (int) $this->input->post('glow_radius'),
+			'glow_color'          => $this->input->post('glow_color'),
+			'shadow_offset'       => (int) $this->input->post('shadow_offset'),
+			'stroke_width'        => (int) $this->input->post('stroke_width'),
+			'stroke_color'        => $this->input->post('stroke_color'),
+		];
+
+		$this->template_background_model->update($id, $data);
+
+		$this->output
+			->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok']));
+	}
+
+	public function preview_template_background($id)
+	{
+		$bg = $this->template_background_model->getById($id);
+
+		if ( ! $bg)
+		{
+			show_404();
+		}
+
+		$bg_file = FCPATH . 'imgs/template-backgrounds/' . $bg->filename;
+
+		if ( ! file_exists($bg_file))
+		{
+			show_404();
+		}
+
+		$this->load->library('cal_image_renderer');
+
+		$fields = [
+			'text_offset', 'summary_margin_top', 'summary_font_size',
+			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
+			'location_font_size', 'location_margin_top', 'glow_radius', 'shadow_offset', 'stroke_width'
+		];
+
+		$layout = [];
+		foreach ($fields as $f)
+		{
+			$layout[$f] = $this->input->get($f) !== null
+				? (int) $this->input->get($f)
+				: (int) $bg->$f;
+		}
+
+		$color_fields = ['font_color', 'glow_color', 'stroke_color'];
+		foreach ($color_fields as $f)
+		{
+			$layout[$f] = $this->input->get($f) !== null
+				? $this->input->get($f)
+				: $bg->$f;
+		}
+
+		$im = $this->cal_image_renderer->render($bg_file, [
+			'summary'  => 'Sample Venue Name',
+			'date'     => 'Saturday - Mar 14',
+			'time'     => '10:00 am - 1:00 pm',
+			'location' => '123 Main St, Anytown, CA',
+		], $layout, FCPATH . 'fonts/');
+
+		if ( ! $im)
+		{
+			show_404();
+		}
+
+		header('Content-Type: image/png');
+		imagepng($im);
+		imagedestroy($im);
+	}
+
+	// --- Template Photos ---
+
+	public function template_photos()
+	{
+		$this->page_data['page']->title = 'Template Photos';
+		$this->page_data['page']->menu = 'template_photos';
+
+		$this->page_data['photos'] = $this->template_photo_model->get();
+
+		$this->load->view('admin/template_photos', $this->page_data);
+	}
+
+	public function upload_template_photo()
+	{
+		$config['upload_path']   = FCPATH . 'imgs/template-photos/';
+		$config['allowed_types'] = 'png';
+		$config['max_size']      = 5120;
+		$config['encrypt_name']  = TRUE;
+
+		$this->load->library('upload', $config);
+
+		if ( ! $this->upload->do_upload('image_file'))
+		{
+			$this->session->set_flashdata('alert', $this->upload->display_errors('', ''));
+			$this->session->set_flashdata('alert-type', 'danger');
+		}
+		else
+		{
+			$upload = $this->upload->data();
+
+			$photo_id = $this->template_photo_model->create([
+				'filename'      => $upload['file_name'],
+				'original_name' => $upload['orig_name'],
+				'width'         => $upload['image_width'],
+				'height'        => $upload['image_height'],
+			]);
+
+			$this->template_model->generate_for_photo($photo_id);
+
+			$this->session->set_flashdata('alert', 'Photo uploaded successfully.');
+			$this->session->set_flashdata('alert-type', 'success');
+		}
+
+		redirect('admin/template_photos', 'refresh');
+	}
+
+	public function toggle_template_photo($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ( ! $photo)
+		{
+			if ($this->input->is_ajax_request())
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error']));
+				return;
+			}
+			redirect('admin/template_photos', 'refresh');
+		}
+
+		$new_state = $photo->is_active ? 0 : 1;
+		$this->template_photo_model->update($id, ['is_active' => $new_state]);
+
+		if ($this->input->is_ajax_request())
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'ok', 'is_active' => $new_state]));
+			return;
+		}
+
+		redirect('admin/template_photos', 'refresh');
+	}
+
+	public function delete_template_photo($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ($photo)
+		{
+			$file_path = FCPATH . 'imgs/template-photos/' . $photo->filename;
+			if (file_exists($file_path))
+			{
+				unlink($file_path);
+			}
+			$this->template_photo_model->delete($id);
+
+			$this->session->set_flashdata('alert', 'Photo deleted.');
+			$this->session->set_flashdata('alert-type', 'success');
+		}
+
+		redirect('admin/template_photos', 'refresh');
+	}
+
+	public function template_photo_defaults($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ( ! $photo)
+		{
+			redirect('admin/template_photos', 'refresh');
+		}
+
+		$this->page_data['page']->title = 'Photo Position Defaults';
+		$this->page_data['page']->menu = 'template_photos';
+		$this->page_data['photo'] = $photo;
+
+		// Get a background for preview (first active, or first available)
+		$this->page_data['preview_bg'] = $this->db->where('is_active', 1)
+			->limit(1)->get('template_backgrounds')->row();
+
+		if ( ! $this->page_data['preview_bg'])
+		{
+			$this->page_data['preview_bg'] = $this->db->limit(1)->get('template_backgrounds')->row();
+		}
+
+		$this->load->view('admin/template_photo_defaults', $this->page_data);
+	}
+
+	public function save_template_photo_defaults()
+	{
+		$id = $this->input->post('photo_id');
+
+		$data = [
+			'photo_x'           => (int) $this->input->post('photo_x'),
+			'photo_y'           => (int) $this->input->post('photo_y'),
+			'photo_scale'       => (int) $this->input->post('photo_scale'),
+			'photo_glow_radius' => (int) $this->input->post('photo_glow_radius'),
+			'photo_glow_color'  => $this->input->post('photo_glow_color'),
+		];
+
+		$this->template_photo_model->update($id, $data);
+
+		$this->output
+			->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok']));
+	}
+
+	public function preview_template_photo($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ( ! $photo)
+		{
+			show_404();
+		}
+
+		$photo_file = FCPATH . 'imgs/template-photos/' . $photo->filename;
+
+		if ( ! file_exists($photo_file))
+		{
+			show_404();
+		}
+
+		// Use a background for preview
+		$bg_id = $this->input->get('bg_id');
+		$bg = $bg_id ? $this->template_background_model->getById($bg_id) : null;
+
+		if ( ! $bg)
+		{
+			$bg = $this->db->where('is_active', 1)->limit(1)->get('template_backgrounds')->row();
+		}
+		if ( ! $bg)
+		{
+			$bg = $this->db->limit(1)->get('template_backgrounds')->row();
+		}
+
+		if ( ! $bg)
+		{
+			show_404();
+		}
+
+		$bg_file = FCPATH . 'imgs/template-backgrounds/' . $bg->filename;
+
+		if ( ! file_exists($bg_file))
+		{
+			show_404();
+		}
+
+		$this->load->library('cal_image_renderer');
+
+		$layout = [
+			'photo_x'           => $this->input->get('photo_x') !== null ? (int) $this->input->get('photo_x') : (int) $photo->photo_x,
+			'photo_y'           => $this->input->get('photo_y') !== null ? (int) $this->input->get('photo_y') : (int) $photo->photo_y,
+			'photo_scale'       => $this->input->get('photo_scale') !== null ? (int) $this->input->get('photo_scale') : (int) $photo->photo_scale,
+			'photo_glow_radius' => $this->input->get('photo_glow_radius') !== null ? (int) $this->input->get('photo_glow_radius') : (int) $photo->photo_glow_radius,
+			'photo_glow_color'  => $this->input->get('photo_glow_color') !== null ? $this->input->get('photo_glow_color') : $photo->photo_glow_color,
+			// Use background text defaults
+			'text_offset'        => (int) $bg->text_offset,
+			'summary_margin_top' => (int) $bg->summary_margin_top,
+			'summary_font_size'  => (int) $bg->summary_font_size,
+			'date_font_size'     => (int) $bg->date_font_size,
+			'date_margin_top'    => (int) $bg->date_margin_top,
+			'time_font_size'     => (int) $bg->time_font_size,
+			'time_margin_top'    => (int) $bg->time_margin_top,
+			'location_font_size' => (int) $bg->location_font_size,
+			'location_margin_top'=> (int) $bg->location_margin_top,
+			'font_color'         => $bg->font_color,
+			'glow_radius'        => (int) $bg->glow_radius,
+			'glow_color'         => $bg->glow_color,
+			'shadow_offset'      => (int) $bg->shadow_offset,
+			'stroke_width'       => (int) $bg->stroke_width,
+			'stroke_color'       => $bg->stroke_color,
+		];
+
+		$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, [
+			'summary'  => 'Sample Venue Name',
+			'date'     => 'Saturday - Mar 14',
+			'time'     => '10:00 am - 1:00 pm',
+			'location' => '123 Main St, Anytown, CA',
+		], $layout, FCPATH . 'fonts/');
+
+		if ( ! $im)
+		{
+			show_404();
+		}
+
+		header('Content-Type: image/png');
+		imagepng($im);
+		imagedestroy($im);
+	}
+
+	// --- Templates ---
+
+	public function templates()
+	{
+		$this->page_data['page']->title = 'Share Templates';
+		$this->page_data['page']->menu = 'templates';
+
+		$this->page_data['templates'] = $this->template_model->get_all_with_assets();
+
+		$this->load->view('admin/templates', $this->page_data);
+	}
+
+	public function template_editor($id)
+	{
+		$template = $this->template_model->get_with_assets($id);
+
+		if ( ! $template)
+		{
+			redirect('admin/templates', 'refresh');
+		}
+
+		$this->page_data['page']->title = 'Template Editor';
+		$this->page_data['page']->menu = 'templates';
+
+		$this->page_data['template'] = $template;
+
+		$this->load->view('admin/template_editor', $this->page_data);
+	}
+
+	public function save_template_layout()
+	{
+		$id = $this->input->post('template_id');
+
+		$layout_data = [
+			'photo_x'             => (int) $this->input->post('photo_x'),
+			'photo_y'             => (int) $this->input->post('photo_y'),
+			'photo_scale'         => (int) $this->input->post('photo_scale'),
+			'photo_glow_radius'   => (int) $this->input->post('photo_glow_radius'),
+			'photo_glow_color'    => $this->input->post('photo_glow_color'),
+			'text_offset'         => (int) $this->input->post('text_offset'),
+			'summary_margin_top'  => (int) $this->input->post('summary_margin_top'),
+			'summary_font_size'   => (int) $this->input->post('summary_font_size'),
+			'date_font_size'      => (int) $this->input->post('date_font_size'),
+			'date_margin_top'     => (int) $this->input->post('date_margin_top'),
+			'time_font_size'      => (int) $this->input->post('time_font_size'),
+			'time_margin_top'     => (int) $this->input->post('time_margin_top'),
+			'location_font_size'  => (int) $this->input->post('location_font_size'),
+			'location_margin_top' => (int) $this->input->post('location_margin_top'),
+			'font_color'          => $this->input->post('font_color'),
+			'glow_radius'         => (int) $this->input->post('glow_radius'),
+			'glow_color'          => $this->input->post('glow_color'),
+			'shadow_offset'       => (int) $this->input->post('shadow_offset'),
+			'stroke_width'        => (int) $this->input->post('stroke_width'),
+			'stroke_color'        => $this->input->post('stroke_color'),
+		];
+
+		$this->template_model->save_layout($id, $layout_data);
+
+		$this->output
+			->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok']));
+	}
+
+	public function toggle_template($id)
+	{
+		$template = $this->template_model->getById($id);
+
+		if ( ! $template)
+		{
+			if ($this->input->is_ajax_request())
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error']));
+				return;
+			}
+			redirect('admin/templates', 'refresh');
+		}
+
+		$new_state = $template->is_active ? 0 : 1;
+		$this->template_model->update($id, ['is_active' => $new_state]);
+
+		if ($this->input->is_ajax_request())
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'ok', 'is_active' => $new_state]));
+			return;
+		}
+
+		redirect('admin/templates', 'refresh');
+	}
+
+	public function preview_template($id)
+	{
+		$template = $this->template_model->get_with_assets($id);
+
+		if ( ! $template)
+		{
+			show_404();
+		}
+
+		$bg_file = FCPATH . 'imgs/template-backgrounds/' . $template->bg_filename;
+		$photo_file = FCPATH . 'imgs/template-photos/' . $template->photo_filename;
+
+		if ( ! file_exists($bg_file) || ! file_exists($photo_file))
+		{
+			show_404();
+		}
+
+		$this->load->library('cal_image_renderer');
+
+		// Build layout from DB, with query string overrides for live preview
+		$fields = [
+			'photo_x', 'photo_y', 'photo_scale', 'photo_glow_radius',
+			'text_offset', 'summary_margin_top', 'summary_font_size',
+			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
+			'location_font_size', 'location_margin_top',
+			'glow_radius', 'shadow_offset', 'stroke_width'
+		];
+
+		$layout = [];
+		foreach ($fields as $f)
+		{
+			$layout[$f] = $this->input->get($f) !== null
+				? (int) $this->input->get($f)
+				: (int) $template->$f;
+		}
+
+		$color_fields = ['photo_glow_color', 'font_color', 'glow_color', 'stroke_color'];
+		foreach ($color_fields as $f)
+		{
+			$layout[$f] = $this->input->get($f) !== null
+				? $this->input->get($f)
+				: $template->$f;
+		}
+
+		$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, [
+			'summary'  => 'Sample Venue Name',
+			'date'     => 'Saturday - Mar 14',
+			'time'     => '10:00 am - 1:00 pm',
+			'location' => '123 Main St, Anytown, CA',
+		], $layout, FCPATH . 'fonts/');
+
+		if ( ! $im)
+		{
+			show_404();
+		}
+
+		header('Content-Type: image/png');
+		imagepng($im);
+		imagedestroy($im);
 	}
 
 	// --- Test Email ---

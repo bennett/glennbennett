@@ -8,6 +8,7 @@ class Admin_login extends CI_Controller {
 		parent::__construct();
 		$this->load->database();
 		$this->load->library('session');
+		$this->load->library('google_auth');
 		$this->load->helper(['url', 'form', 'admin']);
 		$this->load->model('admin_user_model');
 	}
@@ -20,7 +21,8 @@ class Admin_login extends CI_Controller {
 		}
 
 		$data = [
-			'assets' => base_url('assets/admin/')
+			'assets'         => base_url('assets/admin/'),
+			'google_enabled' => $this->google_auth->is_configured(),
 		];
 
 		$this->load->view('admin/account/login', $data);
@@ -52,6 +54,61 @@ class Admin_login extends CI_Controller {
 		else
 		{
 			$this->session->set_flashdata('alert', 'Invalid username or password.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/login', 'refresh');
+		}
+	}
+
+	public function google()
+	{
+		if ( ! $this->google_auth->is_configured()) {
+			redirect('admin/login', 'refresh');
+		}
+
+		redirect($this->google_auth->get_auth_url());
+	}
+
+	public function google_callback()
+	{
+		$code  = $this->input->get('code');
+		$state = $this->input->get('state');
+
+		if (empty($code)) {
+			$this->session->set_flashdata('alert', 'Google login was cancelled.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/login', 'refresh');
+			return;
+		}
+
+		$access_token = $this->google_auth->handle_callback($code, $state);
+		if ( ! $access_token) {
+			$this->session->set_flashdata('alert', 'Google authentication failed.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/login', 'refresh');
+			return;
+		}
+
+		$user_info = $this->google_auth->get_user_info($access_token);
+		if ( ! $user_info) {
+			$this->session->set_flashdata('alert', 'Could not retrieve Google account info.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/login', 'refresh');
+			return;
+		}
+
+		if ( ! $this->google_auth->is_allowed_email($user_info['email'])) {
+			$this->session->set_flashdata('alert', 'Access denied. That Google account is not authorized.');
+			$this->session->set_flashdata('alert-type', 'danger');
+			redirect('admin/login', 'refresh');
+			return;
+		}
+
+		$user = $this->admin_user_model->getById(1);
+		if ($user) {
+			$this->admin_user_model->login($user);
+			redirect('admin', 'refresh');
+		} else {
+			$this->session->set_flashdata('alert', 'No admin user found.');
 			$this->session->set_flashdata('alert-type', 'danger');
 			redirect('admin/login', 'refresh');
 		}

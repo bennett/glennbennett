@@ -32,6 +32,30 @@
         </ul>
     </li>
 
+    <li class="treeview <?php echo in_array($page->menu, ['template_backgrounds', 'template_photos', 'templates']) ? 'active menu-open' : '' ?>">
+        <a href="#">
+            <i class="fa fa-object-group"></i> <span>Share Templates</span>
+            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+        </a>
+        <ul class="treeview-menu">
+            <li <?php echo ($page->menu == 'template_backgrounds') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/template_backgrounds') ?>">
+                    <i class="fa fa-image"></i> <span>Backgrounds</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'template_photos') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/template_photos') ?>">
+                    <i class="fa fa-user"></i> <span>Photos</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'templates') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/templates') ?>">
+                    <i class="fa fa-th-large"></i> <span>Templates</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+
     <li <?php echo ($page->menu == 'test_email') ? 'class="active"' : '' ?>>
         <a href="<?php echo site_url('admin/test_email') ?>">
             <i class="fa fa-envelope"></i> <span>Test Email</span>

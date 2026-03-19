@@ -55,6 +55,12 @@ class Cal_image_model extends MY_Model {
 			'time_margin_top'     => 25,
 			'location_font_size'  => 24,
 			'location_margin_top' => 25,
+			'glow_radius'         => 0,
+			'shadow_offset'       => 0,
+			'font_color'          => '#000000',
+			'glow_color'          => '#ffffff',
+			'stroke_width'        => 0,
+			'stroke_color'        => '#000000',
 		];
 
 		$this->db->insert('cal_image_layouts', array_merge($defaults, $data));
