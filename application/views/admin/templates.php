@@ -3,7 +3,7 @@
 <?php include VIEWPATH . 'admin/includes/header.php'; ?>
 
 <section class="content-header">
-    <h1>Gig Share Templates <small>Photo + background combinations</small></h1>
+    <h1>Share Templates <small>Photo + background combinations</small></h1>
 </section>
 
 <section class="content">
@@ -40,7 +40,7 @@
 
     <div class="box">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-th"></i> Templates (<?php echo count($templates) ?>)</h3>
+            <h3 class="box-title"><i class="fa fa-th"></i> Share Templates (<?php echo count($templates) ?>)</h3>
             <span class="pull-right">
                 <span class="label label-success" style="font-size: 13px;"><?php echo $ready_count ?> Ready</span>
                 <span class="label label-warning" style="font-size: 13px;"><?php echo $needs_work_count ?> Needs Work</span>

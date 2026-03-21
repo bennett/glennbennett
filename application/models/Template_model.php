@@ -20,7 +20,9 @@ class Template_model extends MY_Model {
 		$CI->load->model('template_background_model');
 
 		$bg = $CI->template_background_model->getById($bg_id);
-		$photos = $CI->template_photo_model->get_active();
+		// Only pair with photos that have defaults configured
+		$photos = $this->db->where('is_active', 1)->where('has_defaults', 1)
+			->get('template_photos')->result();
 
 		foreach ($photos as $photo)
 		{
@@ -57,7 +59,10 @@ class Template_model extends MY_Model {
 		$CI->load->model('template_photo_model');
 
 		$photo = $CI->template_photo_model->getById($photo_id);
-		$bgs = $CI->template_background_model->get_active();
+
+		// Only pair with backgrounds that have defaults configured
+		$bgs = $this->db->where('is_active', 1)->where('has_defaults', 1)
+			->get('template_backgrounds')->result();
 
 		foreach ($bgs as $bg)
 		{

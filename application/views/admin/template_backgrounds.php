@@ -56,8 +56,9 @@
 
                                 <div style="margin-top: 10px;">
                                     <a href="<?php echo site_url('admin/template_background_defaults/' . $bg->id) ?>"
-                                       class="btn btn-xs btn-info" title="Edit Text Defaults">
-                                        <i class="fa fa-font"></i> Defaults
+                                       class="btn btn-xs <?php echo $bg->has_defaults ? 'btn-info' : 'btn-warning' ?>" title="<?php echo $bg->has_defaults ? 'Edit Text Defaults' : 'Set defaults to generate share templates' ?>">
+                                        <i class="fa <?php echo $bg->has_defaults ? 'fa-font' : 'fa-exclamation-triangle' ?>"></i>
+                                        <?php echo $bg->has_defaults ? 'Defaults' : 'Set Defaults' ?>
                                     </a>
 
                                     <button class="btn btn-xs toggle-btn <?php echo $bg->is_active ? 'btn-success' : 'btn-default' ?>"
@@ -262,7 +263,7 @@ $(document).ready(function() {
             '<p style="margin-bottom: 5px;"><strong>' + data.original_name + '</strong><br>' +
             '<span class="text-muted" style="font-size: 11px;">' + data.width + 'x' + data.height + '</span></p>' +
             '<div style="margin-top: 10px;">' +
-            '<a href="<?php echo site_url("admin/template_background_defaults/") ?>' + data.id + '" class="btn btn-xs btn-info"><i class="fa fa-font"></i> Defaults</a> ' +
+            '<a href="<?php echo site_url("admin/template_background_defaults/") ?>' + data.id + '" class="btn btn-xs btn-warning" title="Set defaults to generate share templates"><i class="fa fa-exclamation-triangle"></i> Set Defaults</a> ' +
             '<button class="btn btn-xs btn-success toggle-btn" data-id="' + data.id + '"><i class="fa fa-check-circle"></i> Active</button> ' +
             '<a href="<?php echo site_url("admin/delete_template_background/") ?>' + data.id + '" class="btn btn-xs btn-danger" onclick="return confirm(\'Delete this background? Templates using it will be marked as orphaned.\')"><i class="fa fa-trash"></i></a>' +
             '</div></div></div></div>';

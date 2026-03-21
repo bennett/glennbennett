@@ -11,13 +11,13 @@ class Migrate extends MY_Controller {
 
     public function index()
     {
-        $data = array(
-            'migrations' => $this->migration_runner->status(),
-            'success' => $this->session->flashdata('migration_success'),
-            'error' => $this->session->flashdata('migration_error'),
-        );
+        $this->page_data['page']->menu = 'migrate';
+        $this->page_data['page']->title = 'Migrations';
+        $this->page_data['migrations'] = $this->migration_runner->status();
+        $this->page_data['success'] = $this->session->flashdata('migration_success');
+        $this->page_data['error'] = $this->session->flashdata('migration_error');
 
-        $this->load->view('migrate/index', $data);
+        $this->load->view('admin/migrate', $this->page_data);
     }
 
     public function run()

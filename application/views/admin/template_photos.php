@@ -63,8 +63,9 @@
                                     </a>
 
                                     <a href="<?php echo site_url('admin/template_photo_defaults/' . $photo->id) ?>"
-                                       class="btn btn-xs btn-info" title="Edit Position Defaults">
-                                        <i class="fa fa-arrows"></i> Defaults
+                                       class="btn btn-xs <?php echo $photo->has_defaults ? 'btn-info' : 'btn-warning' ?>" title="<?php echo $photo->has_defaults ? 'Edit Position Defaults' : 'Set defaults to generate share templates' ?>">
+                                        <i class="fa <?php echo $photo->has_defaults ? 'fa-arrows' : 'fa-exclamation-triangle' ?>"></i>
+                                        <?php echo $photo->has_defaults ? 'Defaults' : 'Set Defaults' ?>
                                     </a>
 
                                     <button class="btn btn-xs toggle-btn <?php echo $photo->is_active ? 'btn-success' : 'btn-default' ?>"
@@ -265,7 +266,7 @@ $(document).ready(function() {
             '<span class="text-muted" style="font-size: 11px;">' + data.width + 'x' + data.height + '</span></p>' +
             '<div style="margin-top: 10px;">' +
             '<a href="<?php echo site_url("admin/artist_photo_editor/") ?>' + data.id + '" class="btn btn-xs btn-primary"><i class="fa fa-pencil"></i> Edit</a> ' +
-            '<a href="<?php echo site_url("admin/template_photo_defaults/") ?>' + data.id + '" class="btn btn-xs btn-info"><i class="fa fa-arrows"></i> Defaults</a> ' +
+            '<a href="<?php echo site_url("admin/template_photo_defaults/") ?>' + data.id + '" class="btn btn-xs btn-warning" title="Set defaults to generate share templates"><i class="fa fa-exclamation-triangle"></i> Set Defaults</a> ' +
             '<button class="btn btn-xs btn-success toggle-btn" data-id="' + data.id + '"><i class="fa fa-check-circle"></i> Active</button> ' +
             '<a href="<?php echo site_url("admin/delete_template_photo/") ?>' + data.id + '" class="btn btn-xs btn-danger" onclick="return confirm(\'Delete this artist photo? Templates using it will be marked as orphaned.\')"><i class="fa fa-trash"></i></a>' +
             '</div></div></div></div>';

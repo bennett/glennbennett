@@ -554,8 +554,6 @@ class Admin extends Admin_Controller {
 			$bg_name = 'bg-' . $bg_id;
 			$this->template_background_model->update($bg_id, ['original_name' => $bg_name]);
 
-			$this->template_model->generate_for_background($bg_id);
-
 			if ($is_ajax)
 			{
 				$this->output->set_content_type('application/json')
@@ -667,12 +665,25 @@ class Admin extends Admin_Controller {
 			'stroke_color'        => $this->input->post('stroke_color'),
 		];
 
+		$bg = $this->template_background_model->getById($id);
+		$first_time = $bg && ! $bg->has_defaults;
+
+		$data['has_defaults'] = 1;
 		$this->template_background_model->update($id, $data);
-		$this->template_model->unready_by_background($id);
+
+		if ($first_time)
+		{
+			// First time setting defaults — now generate templates with correct values
+			$this->template_model->generate_for_background($id);
+		}
+		else
+		{
+			$this->template_model->unready_by_background($id);
+		}
 
 		$this->output
 			->set_content_type('application/json')
-			->set_output(json_encode(['status' => 'ok']));
+			->set_output(json_encode(['status' => 'ok', 'first_defaults' => $first_time]));
 	}
 
 	public function preview_template_background($id)
@@ -781,8 +792,6 @@ class Admin extends Admin_Controller {
 		// Set default name using the ID
 		$photo_name = 'photo-' . $photo_id;
 		$this->template_photo_model->update($photo_id, ['original_name' => $photo_name]);
-
-		$this->template_model->generate_for_photo($photo_id);
 
 		$this->output->set_content_type('application/json')
 			->set_output(json_encode([
@@ -1101,8 +1110,21 @@ class Admin extends Admin_Controller {
 
 		if ( ! empty($data))
 		{
+			$photo = $this->template_photo_model->getById($id);
+			$first_time = $photo && ! $photo->has_defaults;
+
+			$data['has_defaults'] = 1;
 			$this->template_photo_model->update($id, $data);
-			$this->template_model->unready_by_photo($id);
+
+			if ($first_time)
+			{
+				// First time setting defaults — now generate templates with correct values
+				$this->template_model->generate_for_photo($id);
+			}
+			else
+			{
+				$this->template_model->unready_by_photo($id);
+			}
 		}
 
 		$this->output
@@ -1715,5 +1737,180 @@ class Admin extends Admin_Controller {
 		imagedestroy($src);
 
 		return ['width' => $w, 'height' => $h];
+	}
+
+	// ---------------------------------------------------------------
+	// Share Link Cleanup
+	// ---------------------------------------------------------------
+
+	public function share_cleanup()
+	{
+		$this->page_data['page']->menu = 'share_cleanup';
+		$this->page_data['page']->title = 'Share Link Cleanup';
+
+		// Template readiness
+		$ready = $this->template_model->get_active_with_assets();
+		$this->page_data['templates_ready'] = ! empty($ready);
+		$this->page_data['ready_template_count'] = count($ready);
+
+		// Cal-Event-*.jpg files on disk
+		$cal_event_files = glob(FCPATH . 'imgs/Cal-Event-*.jpg');
+		// Also check for Cal-Event.jpg, Cal-Event-large.jpg, Cal-Event-small.jpg
+		foreach (['Cal-Event.jpg', 'Cal-Event-large.jpg', 'Cal-Event-small.jpg'] as $f)
+		{
+			if (file_exists(FCPATH . 'imgs/' . $f))
+			{
+				$cal_event_files[] = FCPATH . 'imgs/' . $f;
+			}
+		}
+		$this->page_data['cal_event_count'] = count($cal_event_files);
+
+		// cal_images table
+		$this->page_data['cal_images_count'] = $this->db->count_all_results('cal_images');
+
+		// cal_image_layouts table
+		$this->page_data['cal_layouts_count'] = $this->db->count_all_results('cal_image_layouts');
+
+		// venue_images table
+		$this->page_data['venue_images_count'] = $this->db->count_all_results('venue_images');
+
+		// Legacy gcal scripts
+		$gcal_legacy = [
+			'cal_image.php', 'cal_image-small.php', 'fb_image_config.php',
+			'center.php', 'img.php', 'social_page.php',
+			'gcal-core-old.php', 'gcal-old.php', 'index-old.php',
+			'index-direct-load.php', 'example.php', 'leslie.php',
+			'gcal-bennett.php', 'ww_test.php', 'test.php',
+		];
+		$gcal_legacy_found = [];
+		foreach ($gcal_legacy as $f)
+		{
+			if (file_exists(FCPATH . 'gcal/' . $f))
+			{
+				$gcal_legacy_found[] = $f;
+			}
+		}
+		$this->page_data['gcal_legacy_count'] = count($gcal_legacy_found);
+		$this->page_data['gcal_legacy_files'] = $gcal_legacy_found;
+
+		// share_images table
+		$this->load->model('share_image_model');
+		$this->page_data['share_images_count'] = $this->db->count_all_results('share_images');
+		$this->page_data['expired_share_count'] = $this->db
+			->where('start_date <', time())
+			->count_all_results('share_images');
+
+		$this->load->view('admin/share_cleanup', $this->page_data);
+	}
+
+	public function run_share_cleanup()
+	{
+		if ($this->input->method() !== 'post')
+		{
+			redirect('admin/share_cleanup');
+			return;
+		}
+
+		$deleted = [];
+
+		// 1. Delete Cal-Event-*.jpg files
+		$cal_files = glob(FCPATH . 'imgs/Cal-Event-*.jpg');
+		foreach (['Cal-Event.jpg', 'Cal-Event-large.jpg', 'Cal-Event-small.jpg'] as $f)
+		{
+			$path = FCPATH . 'imgs/' . $f;
+			if (file_exists($path)) $cal_files[] = $path;
+		}
+		foreach ($cal_files as $f)
+		{
+			@unlink($f);
+		}
+		if ( ! empty($cal_files))
+		{
+			$deleted[] = count($cal_files) . ' Cal-Event image(s)';
+		}
+
+		// 2. Truncate cal_images and cal_image_layouts
+		$ci_count = $this->db->count_all_results('cal_images');
+		$cl_count = $this->db->count_all_results('cal_image_layouts');
+		if ($ci_count > 0)
+		{
+			$this->db->truncate('cal_image_layouts');
+			$this->db->truncate('cal_images');
+			$deleted[] = $ci_count . ' cal_images + ' . $cl_count . ' layout row(s)';
+		}
+
+		// 3. Truncate venue_images
+		$vi_count = $this->db->count_all_results('venue_images');
+		if ($vi_count > 0)
+		{
+			$this->db->truncate('venue_images');
+			$deleted[] = $vi_count . ' venue_images row(s)';
+		}
+
+		// 4. Delete legacy gcal scripts
+		$gcal_legacy = [
+			'cal_image.php', 'cal_image-small.php', 'fb_image_config.php',
+			'center.php', 'img.php', 'social_page.php',
+			'gcal-core-old.php', 'gcal-old.php', 'index-old.php',
+			'index-direct-load.php', 'example.php', 'leslie.php',
+			'gcal-bennett.php', 'ww_test.php', 'test.php',
+		];
+		$gcal_deleted = 0;
+		foreach ($gcal_legacy as $f)
+		{
+			$path = FCPATH . 'gcal/' . $f;
+			if (file_exists($path))
+			{
+				@unlink($path);
+				$gcal_deleted++;
+			}
+		}
+		// Also clean up junk files
+		foreach (['fbid.png', 'temp.png', 'php-error.log'] as $f)
+		{
+			$path = FCPATH . 'gcal/' . $f;
+			if (file_exists($path))
+			{
+				@unlink($path);
+				$gcal_deleted++;
+			}
+		}
+		if ($gcal_deleted > 0)
+		{
+			$deleted[] = $gcal_deleted . ' legacy gcal file(s)';
+		}
+
+		// Also delete 640-480.jpg if it exists
+		if (file_exists(FCPATH . 'imgs/640-480.jpg'))
+		{
+			@unlink(FCPATH . 'imgs/640-480.jpg');
+			$deleted[] = '640-480.jpg';
+		}
+
+		if (empty($deleted))
+		{
+			$this->session->set_flashdata('cleanup_success', 'Nothing to clean up — already clean.');
+		}
+		else
+		{
+			$this->session->set_flashdata('cleanup_success', 'Cleanup complete: ' . implode(', ', $deleted));
+		}
+
+		redirect('admin/share_cleanup');
+	}
+
+	public function prune_expired_shares()
+	{
+		if ($this->input->method() !== 'post')
+		{
+			redirect('admin/share_cleanup');
+			return;
+		}
+
+		$count = $this->db->where('start_date <', time())->count_all_results('share_images');
+		$this->db->where('start_date <', time())->delete('share_images');
+
+		$this->session->set_flashdata('cleanup_success', 'Pruned ' . $count . ' expired share link(s).');
+		redirect('admin/share_cleanup');
 	}
 }

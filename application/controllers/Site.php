@@ -951,11 +951,10 @@ public function build_data($featured_id = null)
 
 			if ( ! isset($im) || ! $im)
 			{
-				show_error('Could not render image', 500);
-				return;
+				$im = $this->_fallback_image($summary, $font_dir);
 			}
 
-			header('Content-type: image/jpeg');
+			header('Content-type: image/png');
 			imagepng($im);
 			imagedestroy($im);
 			return;
@@ -1134,11 +1133,10 @@ public function build_data($featured_id = null)
 
 		if ( ! $im)
 		{
-			show_error('Could not load background image', 500);
-			return;
+			$im = $this->_fallback_image($summary, $font_dir);
 		}
 
-		header('Content-type: image/jpeg');
+		header('Content-type: image/png');
 		imagepng($im);
 		imagedestroy($im);
 	}
@@ -1209,6 +1207,53 @@ public function build_data($featured_id = null)
 			'stroke_width'       => (int) $tpl->stroke_width,
 			'stroke_color'       => $tpl->stroke_color,
 		];
+	}
+
+	/**
+	 * Generate a simple fallback image when no template or legacy image is available.
+	 * Shows event name on a dark background so share links never 500.
+	 */
+	private function _fallback_image($summary, $font_dir)
+	{
+		$w = 1200;
+		$h = 630;
+		$im = imagecreatetruecolor($w, $h);
+
+		// Dark background
+		$bg = imagecolorallocate($im, 30, 30, 30);
+		imagefill($im, 0, 0, $bg);
+
+		$white = imagecolorallocate($im, 255, 255, 255);
+		$gray = imagecolorallocate($im, 160, 160, 160);
+		$font_title = $font_dir . 'Aladin-Regular.ttf';
+		$font_bold = $font_dir . 'GEORGIAB.TTF';
+
+		// "Glenn Bennett" centered
+		$box = imagettfbbox(60, 0, $font_title, 'Glenn Bennett');
+		$tx = ($w - ($box[2] - $box[0])) / 2;
+		imagettftext($im, 60, 0, (int) $tx, 220, $white, $font_title, 'Glenn Bennett');
+
+		// "Performs" centered
+		$box = imagettfbbox(36, 0, $font_title, 'Performs');
+		$tx = ($w - ($box[2] - $box[0])) / 2;
+		imagettftext($im, 36, 0, (int) $tx, 280, $white, $font_title, 'Performs');
+
+		// Event summary centered
+		if ($summary)
+		{
+			$summary = strip_tags($summary);
+			$box = imagettfbbox(28, 0, $font_bold, $summary);
+			$tx = ($w - ($box[2] - $box[0])) / 2;
+			imagettftext($im, 28, 0, (int) $tx, 360, $gray, $font_bold, $summary);
+		}
+
+		// Footer
+		$url = 'GlennBennett.com/cal';
+		$box = imagettfbbox(18, 0, $font_bold, $url);
+		$tx = ($w - ($box[2] - $box[0])) / 2;
+		imagettftext($im, 18, 0, (int) $tx, 540, $gray, $font_bold, $url);
+
+		return $im;
 	}
 
 }

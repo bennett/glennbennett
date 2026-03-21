@@ -50,10 +50,24 @@
             </li>
             <li <?php echo ($page->menu == 'templates') ? 'class="active"' : '' ?>>
                 <a href="<?php echo site_url('admin/templates') ?>">
-                    <i class="fa fa-th-large"></i> <span>Templates</span>
+                    <i class="fa fa-th-large"></i> <span>Share Templates</span>
                 </a>
             </li>
         </ul>
+    </li>
+
+    <li class="header">TOOLS</li>
+
+    <li <?php echo ($page->menu == 'migrate') ? 'class="active"' : '' ?>>
+        <a href="<?php echo site_url('migrate') ?>">
+            <i class="fa fa-database"></i> <span>Migrations</span>
+        </a>
+    </li>
+
+    <li <?php echo ($page->menu == 'share_cleanup') ? 'class="active"' : '' ?>>
+        <a href="<?php echo site_url('admin/share_cleanup') ?>">
+            <i class="fa fa-trash-o"></i> <span>Share Link Cleanup</span>
+        </a>
     </li>
 
     <li <?php echo ($page->menu == 'test_email') ? 'class="active"' : '' ?>>
