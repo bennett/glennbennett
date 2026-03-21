@@ -1,8 +1,9 @@
 <?php
-// Create venue_type_templates and venue_templates junction tables
+// Fix: create venue_templates table that failed due to MyISAM FK constraint
 
 return array(
     'up' => function($ci) {
+        // venue_type_templates may or may not exist from migration 003
         $ci->db->query("
             CREATE TABLE IF NOT EXISTS `venue_type_templates` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -14,6 +15,7 @@ return array(
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
         ");
 
+        // This one failed in migration 003 due to venues being MyISAM
         $ci->db->query("
             CREATE TABLE IF NOT EXISTS `venue_templates` (
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -26,7 +28,6 @@ return array(
         ");
     },
     'down' => function($ci) {
-        $ci->db->query("DROP TABLE IF EXISTS `venue_templates`");
-        $ci->db->query("DROP TABLE IF EXISTS `venue_type_templates`");
+        // Don't drop — migration 003's down handles these
     },
 );
