@@ -1,6 +1,41 @@
 # Changelog
 
-## 2026-03-20 — Template Editor UX, Naming, Background Normalization (WIP)
+## 2026-03-21 — Production Deploy, Migrations, Cleanup Tool
+
+### Changes
+- Deployed share template system to production
+- Database migration system: web UI at `/migrate` behind admin auth, 6 migrations run successfully on production
+- Share Link Cleanup tool: admin page to retire legacy Cal-Event images, cal_images/cal_image_layouts tables, old gcal scripts — ready when old links expire
+- Template generation deferred until defaults are set: new `has_defaults` flag on photos and backgrounds, templates only created after first save of defaults
+- Graceful fallback image when no template matches — dark image with event name, never 500s
+- Consolidated 10 migrations into 5 (plus 1 fix-up for MyISAM FK constraint)
+- Renamed "Templates" to "Share Templates" in nav and page titles
+- Added TOOLS nav section (Migrations, Share Link Cleanup, Test Email)
+- Cleaned 17 orphaned/dead files from production (old gcal junk, duplicate images, orphaned uploads)
+- Comprehensive README rewrite covering share image architecture, admin panel, endpoints, and deployment
+
+### Bug Fixes
+- Fixed `venue_templates` table creation failure on production (venues table is MyISAM, can't have foreign key constraints)
+- Fixed Migrate controller extending non-existent `MY_Controller` (changed to `Admin_Controller`)
+- Fixed `/migrate` route caught by `(:any)` catch-all (added explicit routes)
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `application/controllers/Admin.php` | Share cleanup controller methods, has_defaults gating on upload/save |
+| `application/controllers/Migrate.php` | Fixed base class, uses admin layout |
+| `application/controllers/Site.php` | Fallback image method, graceful error handling |
+| `application/models/Template_model.php` | Only pair with has_defaults counterparts |
+| `application/views/admin/share_cleanup.php` | New — cleanup tool UI |
+| `application/views/admin/migrate.php` | New — migration runner in admin layout |
+| `application/views/admin/includes/nav.php` | TOOLS section, Share Templates rename |
+| `application/views/admin/template_photos.php` | Set Defaults button state |
+| `application/views/admin/template_backgrounds.php` | Set Defaults button state |
+| `application/config/routes.php` | Migrate routes before catch-all |
+| `database/migrations/` | Consolidated to 5 + 1 fix-up migration |
+| `README.md` | Comprehensive rewrite |
+
+## 2026-03-20 — Template Editor UX, Naming, Background Normalization
 
 ### Changes
 - Template editor: back button and save moved to page header, save redirects to templates list, unsaved changes warning on all 3 editor pages
