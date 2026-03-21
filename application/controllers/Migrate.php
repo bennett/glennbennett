@@ -1,7 +1,9 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-class Migrate extends MY_Controller {
+require_once APPPATH . 'core/Admin_Controller.php';
+
+class Migrate extends Admin_Controller {
 
     public function __construct()
     {

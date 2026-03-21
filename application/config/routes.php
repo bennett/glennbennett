@@ -75,6 +75,11 @@ $route['admin/dup_events/day'] = 'admin_dup/day';
 $route['admin/dup_events/generate_csv'] = 'admin_dup/generate_csv';
 $route['admin/(:any)'] = 'admin/$1';
 
+// Tools
+$route['migrate'] = 'migrate/index';
+$route['migrate/run'] = 'migrate/run';
+$route['migrate/rollback'] = 'migrate/rollback';
+
 $route['(:any)'] = 'site/$1';
 
 
