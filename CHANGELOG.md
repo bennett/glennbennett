@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-03-21b — Canvas-Relative Scaling, Gap Fix, Deleted Template Handling
+
+### Changes
+- Photo scale is now relative to canvas height (630px) instead of native photo dimensions — scale values are consistent across all photos regardless of native size
+- Migration `002_convert_photo_scale_to_canvas_relative` converts existing values on production
+- Scale label updated to "% of canvas height" in template editor and photo defaults
+- Deleted templates now clean up junction table rows (venue_templates, venue_type_templates) and cached previews
+- Null guards added to `generate_for_background()` and `generate_for_photo()` in Template_model
+- README updated with photo scaling explanation and deleted template resilience documentation
+
+### Bug Fixes
+- Fixed gap/margin controls not working on photo defaults page — `$date_margin_top`, `$time_margin_top`, `$location_margin_top` were extracted from layout but never applied during text rendering (hardcoded `$this->y += 20` replaced with actual margin values)
+- Added `_print_wrapped()` helper for long text wrapping (splits at middle space for strings > 30 chars)
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `application/libraries/Cal_image_renderer.php` | Canvas-relative scaling in render_template and render_expired, gap margins fix, _print_wrapped helper |
+| `application/controllers/Admin.php` | Junction table cleanup on template delete |
+| `application/models/Template_model.php` | Null guards on generate methods |
+| `application/views/admin/template_editor.php` | Scale label "% of canvas height" |
+| `application/views/admin/template_photo_defaults.php` | Scale label "% of canvas height" |
+| `database/migrations/2026_03_21_002_convert_photo_scale_to_canvas_relative.php` | New migration |
+| `README.md` | Photo scaling and deleted template resilience docs |
+
 ## 2026-03-21 — Production Deploy, Migrations, Cleanup Tool
 
 ### Changes

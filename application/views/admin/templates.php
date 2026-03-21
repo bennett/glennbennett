@@ -58,19 +58,19 @@
                         <?php
                         if ($tpl->is_orphaned) {
                             $border_color = '#dd4b39';
-                            $status_label = '<span class="label label-danger"><i class="fa fa-chain-broken"></i> Orphaned</span>';
+                            $status_label = '<span class="label label-danger" style="font-size: 14px; padding: 5px 10px;"><i class="fa fa-chain-broken"></i> Orphaned</span>';
                         } elseif ( ! $tpl->is_ready) {
                             $border_color = '#f39c12';
-                            $status_label = '<span class="label label-warning"><i class="fa fa-wrench"></i> Needs Work</span>';
+                            $status_label = '<span class="label label-warning" style="font-size: 14px; padding: 5px 10px;"><i class="fa fa-wrench"></i> Needs Work</span>';
                         } else {
                             $border_color = '#00a65a';
-                            $status_label = '<span class="label label-success"><i class="fa fa-check"></i> Ready</span>';
+                            $status_label = '<span class="label label-success" style="font-size: 14px; padding: 5px 10px;"><i class="fa fa-check"></i> Ready</span>';
                         }
                         ?>
                         <div class="col-md-6 col-sm-6 col-xs-12" style="margin-bottom: 20px;">
                             <div class="thumbnail" style="position: relative; border-left: 4px solid <?php echo $border_color ?>;">
 
-                                <div style="position: absolute; top: 8px; right: 8px; z-index: 1; font-size: 13px; padding: 4px 8px;">
+                                <div class="status-badge" data-id="<?php echo $tpl->id ?>" style="position: absolute; top: 8px; right: 8px; z-index: 1;">
                                     <?php echo $status_label ?>
                                 </div>
 
@@ -104,11 +104,11 @@
 
                                     <?php if ( ! empty($tpl->venues)): ?>
                                         <div style="margin-bottom: 8px;">
-                                            <span class="label label-warning" style="font-size: 13px; padding: 4px 8px;"><?php echo htmlspecialchars($tpl->venues[0]->name) ?></span>
+                                            <span class="label label-info" style="font-size: 13px; padding: 4px 8px;"><i class="fa fa-map-marker"></i> <?php echo htmlspecialchars($tpl->venues[0]->name) ?></span>
                                         </div>
                                     <?php elseif ( ! empty($tpl->venue_types) && $tpl->venue_types[0]->slug !== 'general'): ?>
                                         <div style="margin-bottom: 8px;">
-                                            <span class="label label-primary" style="font-size: 13px; padding: 4px 8px;"><?php echo htmlspecialchars($tpl->venue_types[0]->name) ?></span>
+                                            <span class="label label-primary" style="font-size: 13px; padding: 4px 8px;"><i class="fa fa-tag"></i> <?php echo htmlspecialchars($tpl->venue_types[0]->name) ?></span>
                                         </div>
                                     <?php endif; ?>
 
@@ -155,12 +155,19 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(resp) {
                 if (resp.status === 'ok') {
+                    var $card = $btn.closest('.thumbnail');
+                    var $badge = $card.find('.status-badge');
+
                     if (resp.is_ready) {
                         $btn.removeClass('btn-default').addClass('btn-success');
                         $btn.html('<i class="fa fa-check"></i> Ready');
+                        $card.css('border-left-color', '#00a65a');
+                        $badge.html('<span class="label label-success" style="font-size: 14px; padding: 5px 10px;"><i class="fa fa-check"></i> Ready</span>');
                     } else {
                         $btn.removeClass('btn-success').addClass('btn-default');
                         $btn.html('<i class="fa fa-circle-o"></i> Not Ready');
+                        $card.css('border-left-color', '#f39c12');
+                        $badge.html('<span class="label label-warning" style="font-size: 14px; padding: 5px 10px;"><i class="fa fa-wrench"></i> Needs Work</span>');
                     }
                 }
             }

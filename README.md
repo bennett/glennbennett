@@ -56,6 +56,16 @@ The share image system generates 1200x630 OG images for Facebook/social media ev
 5. **Customize per-template** in the template editor (override defaults)
 6. **Mark as Ready** → template enters the active pool for rendering
 
+### Photo Scaling
+
+Photo scale is expressed as **% of canvas height** (630px), not % of the photo's native pixel dimensions. This means a scale value of 100% always renders the photo at exactly 630px tall regardless of which artist photo is used. This makes default scale values consistent across all photos — setting defaults on one photo and generating templates with another produces the same visual size.
+
+### Deleted Template Resilience
+
+Share links always work even when templates are deleted. Images are rendered dynamically on each request using a multi-tier fallback chain. If a template's photo or background is deleted, the template silently drops from query results (INNER JOINs), and the next available template is used. The system never returns a 500 error — the worst case is a plain dark fallback image showing the event name.
+
+When a photo or background is deleted, its templates are marked **orphaned** rather than deleted. This preserves layout settings in case the asset is re-uploaded. Deleting a template also cleans up junction table references (venue_templates, venue_type_templates) and cached preview images.
+
 ### Template Selection Priority
 
 1. **Venue-specific templates** — assigned directly to a venue
@@ -178,6 +188,8 @@ Migrations live in `database/migrations/` and run via the web UI at `/migrate` (
 | `003_create_venue_template_junctions` | venue_type_templates + venue_templates junction tables |
 | `004_add_venue_type_id_to_venues` | FK from venues to venue_types |
 | `005_add_share_template_columns` | All new columns: templates (is_ready, is_orphaned, name, image adjustments), template_photos (has_defaults, image adjustments, text defaults), template_backgrounds (has_defaults) |
+| `2026_03_21_001_fix_venue_templates_table` | Fix venue_templates table for MyISAM compatibility |
+| `2026_03_21_002_convert_photo_scale_to_canvas_relative` | Convert photo_scale values from photo-relative to canvas-relative |
 
 ## File Structure
 

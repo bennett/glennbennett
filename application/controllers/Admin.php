@@ -1391,6 +1391,10 @@ class Admin extends Admin_Controller {
 
 		if ($template && $template->is_orphaned)
 		{
+			// Clean up junction table rows
+			$this->template_model->sync_venue_types($id, []);
+			$this->template_model->sync_venues($id, []);
+
 			$this->template_model->delete($id);
 
 			$cache_file = FCPATH . 'imgs/template-cache/preview-' . $id . '.png';

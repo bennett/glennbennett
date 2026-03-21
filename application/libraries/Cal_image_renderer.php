@@ -67,9 +67,10 @@ class Cal_image_renderer {
             $photo_w = imagesx($photo);
             $photo_h = imagesy($photo);
 
+            // Scale relative to canvas height so % is consistent across all photos
             $scale = isset($layout['photo_scale']) ? (int) $layout['photo_scale'] : 100;
-            $new_w = (int) ($photo_w * $scale / 100);
-            $new_h = (int) ($photo_h * $scale / 100);
+            $new_h = (int) ($this->image_height * $scale / 100);
+            $new_w = (int) ($new_h * ($photo_w / $photo_h));
 
             $photo_x = isset($layout['photo_x']) ? (int) $layout['photo_x'] : 0;
             $photo_y = isset($layout['photo_y']) ? (int) $layout['photo_y'] : 0;
@@ -182,65 +183,21 @@ class Cal_image_renderer {
         $this->print_line(['text' => 'Performs', 'font' => $font_title, 'font_size' => $subtitle_font_size], $text_offset, $text_color);
         $this->y += 30;
 
-        // Build main text entries
-        $msg_text_main = [
-            ['text' => $summary, 'font' => $font_bold, 'font_size' => $summary_font_size],
-            ['text' => $date,    'font' => $font_bold, 'font_size' => $date_font_size],
-            ['text' => ' ',      'font' => $font_bold, 'font_size' => 18],
-            ['text' => $time,    'font' => $font_bold, 'font_size' => $time_font_size],
-        ];
+        // Print summary with long-text wrapping
+        $this->_print_wrapped($summary, $font_bold, $summary_font_size, $text_offset, $text_color);
 
-        // Print main text with long-text wrapping
-        foreach ($msg_text_main as $idx => $msg) {
-            $text = $msg['text'];
+        // Date
+        $this->y += $date_margin_top;
+        $this->_print_wrapped($date, $font_bold, $date_font_size, $text_offset, $text_color);
 
-            // Long text wrapping: split at middle space if > 30 chars
-            if (strlen($text) > 30) {
-                $middle = strlen($text) / 2;
-                $spaces = [];
-
-                for ($i = 0; $i < strlen($text); $i++) {
-                    if ($text[$i] == ' ') {
-                        $spaces[] = $i;
-                    }
-                }
-
-                if (!empty($spaces)) {
-                    $best_space = $spaces[0];
-                    foreach ($spaces as $space_pos) {
-                        if (abs($space_pos - $middle) < abs($best_space - $middle)) {
-                            $best_space = $space_pos;
-                        }
-                    }
-
-                    $first_half = substr($text, 0, $best_space);
-                    $second_half = substr($text, $best_space + 1);
-
-                    $msg_copy1 = $msg;
-                    $msg_copy1['text'] = $first_half;
-                    $this->print_line($msg_copy1, $text_offset, $text_color);
-
-                    $msg_copy2 = $msg;
-                    $msg_copy2['text'] = $second_half;
-                    $this->print_line($msg_copy2, $text_offset, $text_color);
-                } else {
-                    $this->print_line($msg, $text_offset, $text_color);
-                }
-            } else {
-                $this->print_line($msg, $text_offset, $text_color);
-            }
-        }
-
-        $this->y += 20;
+        // Time
+        $this->y += $time_margin_top;
+        $this->_print_wrapped($time, $font_bold, $time_font_size, $text_offset, $text_color);
 
         // Location
+        $this->y += $location_margin_top;
         if ($location) {
-            $msg_text = [
-                'text'      => $location,
-                'font'      => $font_bold,
-                'font_size' => $location_font_size
-            ];
-            $this->print_line($msg_text, $text_offset, $text_color);
+            $this->_print_wrapped($location, $font_bold, $location_font_size, $text_offset, $text_color);
         }
 
         // Footer: website URL
@@ -278,9 +235,10 @@ class Cal_image_renderer {
             $photo_w = imagesx($photo);
             $photo_h = imagesy($photo);
 
+            // Scale relative to canvas height so % is consistent across all photos
             $scale = isset($layout['photo_scale']) ? (int) $layout['photo_scale'] : 100;
-            $new_w = (int) ($photo_w * $scale / 100);
-            $new_h = (int) ($photo_h * $scale / 100);
+            $new_h = (int) ($this->image_height * $scale / 100);
+            $new_w = (int) ($new_h * ($photo_w / $photo_h));
 
             $photo_x = isset($layout['photo_x']) ? (int) $layout['photo_x'] : 0;
             $photo_y = isset($layout['photo_y']) ? (int) $layout['photo_y'] : 0;
@@ -524,6 +482,32 @@ class Cal_image_renderer {
         if ($t < 1/2) return $q;
         if ($t < 2/3) return $p + ($q - $p) * (2/3 - $t) * 6;
         return $p;
+    }
+
+    /**
+     * Print text with automatic wrapping for long strings (> 30 chars)
+     */
+    private function _print_wrapped($text, $font, $font_size, $offset, $color)
+    {
+        $msg = ['text' => $text, 'font' => $font, 'font_size' => $font_size];
+
+        if (strlen($text) > 30) {
+            $middle = strlen($text) / 2;
+            $spaces = [];
+            for ($i = 0; $i < strlen($text); $i++) {
+                if ($text[$i] == ' ') $spaces[] = $i;
+            }
+            if (!empty($spaces)) {
+                $best_space = $spaces[0];
+                foreach ($spaces as $sp) {
+                    if (abs($sp - $middle) < abs($best_space - $middle)) $best_space = $sp;
+                }
+                $this->print_line(['text' => substr($text, 0, $best_space), 'font' => $font, 'font_size' => $font_size], $offset, $color);
+                $this->print_line(['text' => substr($text, $best_space + 1), 'font' => $font, 'font_size' => $font_size], $offset, $color);
+                return;
+            }
+        }
+        $this->print_line($msg, $offset, $color);
     }
 
     private function print_line($msg, $offset, $color)

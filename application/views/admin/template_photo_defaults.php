@@ -62,7 +62,7 @@
                                 <label>Scale</label>
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <input type="number" id="photo_scale" min="10" max="300" value="<?php echo $photo->photo_scale ?>" class="form-control layout-range" style="width: 80px;">
-                                    <span>%</span>
+                                    <span>% of canvas height</span>
                                 </div>
                             </div>
                             <div class="form-group">
