@@ -13,7 +13,7 @@
 								<li class="menu-item"><a class="menu-link" href="#"><div>About</div></a>
 									<ul class="sub-menu-container">
 										<li class="menu-item"><a class="menu-link" href="/about"><div>About</div></a></li>
-										<li class="menu-item"><a class="menu-link" href="/site/mlist"><div>Newsletter</div></a></li>
+										<li class="menu-item"><a class="menu-link" href="/newsletter"><div>Newsletter</div></a></li>
 										<li class="menu-item"><a class="menu-link" href="/contact"><div>Contact</div></a></li>
 									</ul>
 								</li>

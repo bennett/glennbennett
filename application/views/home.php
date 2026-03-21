@@ -99,7 +99,7 @@
                                 <li class="menu-item"><a class="menu-link" href="#"><div>About</div></a>
                                     <ul class="sub-menu-container">
                                         <li class="menu-item"><a class="menu-link" href="/about"><div>About</div></a></li>
-                                        <li class="menu-item"><a class="menu-link" href="/site/mlist"><div>Newsletter</div></a></li>
+                                        <li class="menu-item"><a class="menu-link" href="/newsletter"><div>Newsletter</div></a></li>
                                         <li class="menu-item"><a class="menu-link" href="/contact"><div>Contact</div></a></li>
                                     </ul>
                                 </li>
@@ -434,7 +434,7 @@ if (count($parts) >= 2) {
                             <a href="https://music.glennbennett.com" target="_blank" class="text-white-50 mr-3">Albums</a>
                             <a href="/cal" class="text-white-50 mr-3">Calendar</a>
                             <a href="/about" class="text-white-50 mr-3">About</a>
-                            <a href="/site/mlist" class="text-white-50 mr-3">Newsletter</a>
+                            <a href="/newsletter" class="text-white-50 mr-3">Newsletter</a>
                             <a href="/contact" class="text-white-50">Contact</a>
                         </div>
                         <div class="mt-2">

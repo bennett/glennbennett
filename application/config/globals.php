@@ -11,4 +11,4 @@ $config['audio_path'] = "/home/tsgimh/admin.glennbennett.com/uploads/tracks/audi
 $config['image_url'] = "http://admin.glennbennett.com/uploads/tracks/art/";
 
 $config['contact_link'] = "https://forms.reform.app/gne3w8/contact-glenn/o8201r";
-$config['subscribe_link'] = "https://glennbennett.com/site/mlist";
+$config['subscribe_link'] = "https://glennbennett.com/newsletter";

@@ -508,8 +508,24 @@ public function build_data($featured_id = null)
     
     public function mlist()
     {
-        $data['title'] = "Mailing List";
-        $data['sub_title'] = "Glenn Bennett Mailing List";
+        $data['title'] = "Newsletter";
+        $data['sub_title'] = "Glenn Bennett Newsletter";
+
+        $start = time();
+        $end = $start + (14 * 86400);
+        $events = $this->gcal_gig_reader->get_events($start, $end);
+        $upcoming = [];
+        foreach ($events as $evt) {
+            $upcoming[] = [
+                'summary'  => $evt['summary'],
+                'date'     => date('D M j', $evt['start_date']),
+                'time'     => date('g:i a', $evt['start_date']) . ' - ' . date('g:i a', $evt['end_date']),
+                'location' => $evt['location'],
+            ];
+            if (count($upcoming) >= 5) break;
+        }
+        $data['upcoming_events'] = $upcoming;
+
         $this->layout_view('mlist', $data);
     }
     
@@ -563,7 +579,7 @@ public function build_data($featured_id = null)
         $navs = [
             ['url' => '/request/', 'icon' => 'fa-hand-paper', 'text' => 'Request System'],
             ['url' => '/tip/', 'icon' => 'fa-coffee', 'text' => 'Online Tipping'],
-            ['url' => '/follow/', 'icon' => 'fa-link', 'text' => 'Follow']
+            ['url' => '/newsletter/', 'icon' => 'fa-envelope', 'text' => 'Newsletter']
         ];
         
         $links = [

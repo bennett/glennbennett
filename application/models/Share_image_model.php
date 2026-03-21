@@ -12,6 +12,15 @@ class Share_image_model extends MY_Model {
 		$row = $this->db->get_where($this->table, ['hash' => $hash])->row();
 		if ($row)
 		{
+			if ($row->location !== $location || $row->summary !== $summary)
+			{
+				$this->db->update($this->table, [
+					'location' => $location,
+					'summary'  => $summary,
+				], ['id' => $row->id]);
+				$row->location = $location;
+				$row->summary = $summary;
+			}
 			return $row;
 		}
 

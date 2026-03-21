@@ -124,7 +124,7 @@
 							<a href="https://music.glennbennett.com" target="_blank" class="text-white-50 mx-2">Albums</a>
 							<a href="/cal" class="text-white-50 mx-2">Calendar</a>
 							<a href="/about" class="text-white-50 mx-2">About</a>
-							<a href="/site/mlist" class="text-white-50 mx-2">Newsletter</a>
+							<a href="/newsletter" class="text-white-50 mx-2">Newsletter</a>
 							<a href="/contact" class="text-white-50 mx-2">Contact</a>
 							<a href="/booking" class="text-white-50 mx-2">Booking</a>
 						</div>

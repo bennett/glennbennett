@@ -1,5 +1,10 @@
+<div class="container py-5">
+<div class="row gutter-50">
+
+<!-- Newsletter Form -->
+<div class="col-md-7 col-12">
+
 <!-- Begin Brevo Form -->
-<!-- START - We recommend to place the below code in head tag of your website html  -->
 <style>
   @font-face {
     font-display: block;
@@ -45,9 +50,7 @@
   }
 </style>
 <link rel="stylesheet" href="https://sibforms.com/forms/end-form/build/sib-styles.css">
-<!--  END - We recommend to place the above code in head tag of your website html -->
 
-<!-- START - We recommend to place the below code where you want the form in your website html  -->
 <div class="sib-form" style="text-align: center;
          background-color: #EFF2F7;                                 ">
   <div id="sib-form-container" class="sib-form-container">
@@ -203,9 +206,82 @@
     </div>
   </div>
 </div>
-<!-- END - We recommend to place the above code where you want the form in your website html  -->
+<!-- End Brevo Form -->
 
-<!-- START - We recommend to place the below code in footer or bottom of your website html  -->
+</div>
+
+<!-- Sidebar -->
+<div class="col-md-5 col-12">
+
+    <!-- Upcoming Shows -->
+    <div class="fancy-title title-dotted-border">
+        <h3>Upcoming Shows</h3>
+    </div>
+    <?php if ( ! empty($upcoming_events)): ?>
+        <?php foreach ($upcoming_events as $evt): ?>
+            <div style="display: flex; gap: 15px; margin-bottom: 18px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #1ABC9C;">
+                <div style="min-width: 55px; text-align: center; padding-top: 2px;">
+                    <div style="font-size: 12px; text-transform: uppercase; color: #999; letter-spacing: 1px;"><?php echo date('D', strtotime($evt['date'])) ?></div>
+                    <div style="font-size: 28px; font-weight: 700; line-height: 1; color: #333;"><?php echo date('j', strtotime($evt['date'])) ?></div>
+                    <div style="font-size: 11px; text-transform: uppercase; color: #999;"><?php echo date('M', strtotime($evt['date'])) ?></div>
+                </div>
+                <div>
+                    <strong style="font-size: 18px;"><?php echo htmlspecialchars($evt['summary']) ?></strong><br>
+                    <span style="color: #555; font-size: 14px;"><i class="icon-time"></i> <?php echo $evt['time'] ?></span>
+                    <?php if ($evt['location']): ?>
+                        <br><span style="color: #777; font-size: 14px;"><i class="icon-map-marker1"></i> <?php echo htmlspecialchars($evt['location']) ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p class="text-muted">No upcoming shows in the next two weeks.</p>
+    <?php endif; ?>
+    <a href="/calendar" class="btn btn-default btn-sm" style="margin-top: 10px;">View Full Calendar</a>
+
+    <!-- Music Player -->
+    <div style="margin-top: 40px;">
+        <div class="fancy-title title-dotted-border">
+            <h3>Listen to My Music</h3>
+        </div>
+        <p>Stream every original track, browse albums, and explore playlists &mdash; no ads, no algorithms.</p>
+        <a href="https://music.glennbennett.com" class="btn btn-primary" target="_blank">
+            <i class="icon-play"></i> Launch the Player
+        </a>
+    </div>
+
+    <!-- Connect -->
+    <div style="margin-top: 40px;">
+        <div class="fancy-title title-dotted-border">
+            <h3>Connect</h3>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a target="_blank" href="https://www.facebook.com/glennlbennett" class="social-icon si-large si-colored si-facebook" title="Facebook">
+                <i class="icon-facebook"></i>
+                <i class="icon-facebook"></i>
+            </a>
+            <a target="_blank" href="https://www.instagram.com/glennlbennett/" class="social-icon si-large si-colored si-instagram" title="Instagram">
+                <i class="icon-instagram"></i>
+                <i class="icon-instagram"></i>
+            </a>
+            <a target="_blank" href="https://www.youtube.com/@glennbennettmusic" class="social-icon si-large si-colored si-youtube" title="YouTube">
+                <i class="icon-youtube"></i>
+                <i class="icon-youtube"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Photo -->
+    <div style="margin-top: 40px;">
+        <img src="/imgs/alley.jpg" class="img-responsive rounded shadow-sm" alt="Glenn Bennett performing" style="width: 100%; border-radius: 6px;">
+        <p class="text-muted text-center" style="font-size: 12px; margin-top: 8px;">Live at The Alley, Moorpark</p>
+    </div>
+
+</div>
+
+</div><!-- /row -->
+</div><!-- /container -->
+
 <script>
   window.REQUIRED_CODE_ERROR_MESSAGE = 'Please choose a country code';
   window.LOCALE = 'en';
@@ -214,9 +290,6 @@
   window.REQUIRED_ERROR_MESSAGE = "This field cannot be left blank. ";
 
   window.GENERIC_INVALID_MESSAGE = "The information provided is invalid. Please review the field format and try again.";
-
-
-
 
   window.translation = {
     common: {
@@ -229,8 +302,4 @@
 </script>
 
 <script defer src="https://sibforms.com/forms/end-form/build/main.js"></script>
-
 <script src="https://www.google.com/recaptcha/api.js?render=6LdMeXAcAAAAAKPekAQnT0dloUqXG47mq8XV2Drh&hl=en" async defer></script>
-
-<!-- END - We recommend to place the above code in footer or bottom of your website html  -->
-<!-- End Brevo Form -->
