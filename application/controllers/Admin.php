@@ -1216,7 +1216,7 @@ class Admin extends Admin_Controller {
 			'stroke_width'       => $this->input->get('stroke_width') !== null ? (int) $this->input->get('stroke_width') : (int) $photo->stroke_width,
 			'stroke_color'       => $this->input->get('stroke_color') !== null ? $this->input->get('stroke_color') : $photo->stroke_color,
 			'text_bg_opacity'    => $this->input->get('text_bg_opacity') !== null ? (int) $this->input->get('text_bg_opacity') : (int) $photo->text_bg_opacity,
-			'text_bg_color'      => $this->input->get('text_bg_color') !== null ? $this->input->get('text_bg_color') : ($photo->text_bg_color ?: '#000000'),
+			'text_bg_color'      => $this->input->get('text_bg_color') !== null ? $this->input->get('text_bg_color') : ($photo->text_bg_color ?: '#ffffff'),
 		];
 
 		$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, [

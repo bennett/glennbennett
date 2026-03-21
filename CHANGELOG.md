@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-03-21c — PHP 8.3 Upgrade, Text Background Rounded Corners
+
+### Changes
+- **Production PHP upgraded from 7.2 to 8.3** — patched CI3's `system/core/Common.php` to suppress dynamic property deprecation warnings; changed `.htaccess` handler to `ea-php83`
+- Text background boxes now have **rounded corners** (40px radius) with feathered glow edges
+- Header box has flat bottom corners and reduced bottom padding so it tucks into the details box without overlap
+- Text background color default changed from black to white
+- README updated with full PHP 8.3 upgrade guide for other CI3 projects
+- CLAUDE.md updated with critical warnings about patched files
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `system/core/Common.php` | Patched `_error_handler()` to suppress dynamic property deprecation (deployed manually via lftp) |
+| `.htaccess` | Changed handler from `ea-php72` to `ea-php83` |
+| `application/libraries/Cal_image_renderer.php` | Rounded corners via `_imagefilledroundedrect()` helper, selective corner rounding (top-only for header), white default |
+| `application/controllers/Admin.php` | Text background color default to white |
+| `application/views/admin/template_editor.php` | Text background color default to white |
+| `application/views/admin/template_photo_defaults.php` | Text background color default to white |
+| `database/migrations/2026_03_21_003_add_text_bg_columns.php` | Default color changed to #ffffff |
+| `index.php` | Cleaned up failed suppression attempts |
+| `README.md` | PHP 8.3 upgrade guide, version table updated |
+| `CLAUDE.md` | Production PHP version updated, critical file warnings |
+
 ## 2026-03-21b — Canvas-Relative Scaling, Gap Fix, Deleted Template Handling
 
 ### Changes

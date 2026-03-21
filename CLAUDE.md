@@ -67,4 +67,32 @@ Key packages: `spatie/calendar-links` (generate add-to-calendar links), `johngro
 
 ### Production PHP Version
 
-InMotion shared hosting runs **PHP 7.2** for web requests (set via `AddHandler ea-php72` in `.htaccess`). The CLI PHP is 8.3 but that's irrelevant — the web server uses a different binary. Upgrading the web PHP to 8.1+ causes a 500 error (unresolved as of 2026-03-19). Do NOT deploy `vendor/` or any code that requires PHP 8.1+.
+Production now runs **PHP 8.3** (upgraded 2026-03-21 from 7.2). Local dev runs **PHP 8.4** via Herd.
+
+**!! CRITICAL — DO NOT TOUCH THESE FILES !!**
+
+The PHP 8.3 upgrade required a surgical patch to CodeIgniter 3's core to suppress dynamic property deprecation warnings (PHP 8.2+ deprecated dynamic properties, which CI3 uses everywhere). Two files make this work:
+
+1. **`.htaccess`** — contains `AddHandler application/x-httpd-ea-php83` which tells InMotion's Apache to use PHP 8.3. If you change this to `ea-php72` the site reverts to PHP 7.2. If you use a version that doesn't exist (e.g. `ea-php84`) the site returns 406 errors.
+
+2. **`system/core/Common.php`** — patched `_error_handler()` function (around line 615) to suppress `Creation of dynamic property` deprecation warnings. Without this patch, the homepage dumps 24+ PHP error blocks to every visitor. The patch is:
+   ```php
+   // PHP 8.2+ CI3 compatibility: suppress dynamic property deprecation
+   if ($severity === E_DEPRECATED && strpos($message, 'Creation of dynamic property') !== false)
+   {
+       return;
+   }
+   ```
+
+**Why these are dangerous:**
+- `system/` is normally gitignored and never deployed — this is the ONE exception
+- The `.htaccess` handler name must exactly match an EasyApache package installed on InMotion — `ea-php83` is the only confirmed working version above 7.2
+- Removing the Common.php patch while on PHP 8.3 will display raw PHP errors to every visitor
+- The lftp exclude list does NOT deploy `system/` by default — this file was deployed manually via `lftp put -O system/core/ system/core/Common.php`
+- If CI3's `system/` folder is ever replaced/updated, this patch must be reapplied
+
+**What we tried that didn't work:**
+- `error_reporting(E_ALL & ~E_DEPRECATED)` in `index.php` — CI3's error handler ignores `error_reporting()` for display purposes
+- `ini_set('display_errors', 0)` — CI3's `str_ireplace` check treats `'0'` as truthy (only matches `'off'`, `'none'`, `'no'`, `'false'`, `'null'`)
+- `ini_set('display_errors', 'off')` — still didn't work because CI3's handler runs before the setting takes effect
+- Custom `set_error_handler()` before `require CodeIgniter.php` — CI3 replaces it with its own handler

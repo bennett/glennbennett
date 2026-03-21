@@ -252,7 +252,7 @@ class Cal_image_renderer {
         $opacity = isset($layout['text_bg_opacity']) ? (int) $layout['text_bg_opacity'] : 0;
         if ($opacity <= 0 || empty($this->measured_lines)) return;
 
-        $hex = isset($layout['text_bg_color']) ? ltrim($layout['text_bg_color'], '#') : '000000';
+        $hex = isset($layout['text_bg_color']) ? ltrim($layout['text_bg_color'], '#') : 'ffffff';
         $bg_r = hexdec(substr($hex, 0, 2));
         $bg_g = hexdec(substr($hex, 2, 2));
         $bg_b = hexdec(substr($hex, 4, 2));
@@ -279,22 +279,70 @@ class Cal_image_renderer {
                 $max_y = max($max_y, $line['y'] + $line['descent']);
             }
 
+            $bot_padding = ($section === 'header') ? 8 : $padding;
+            $corners = ($section === 'header') ? 'top' : 'all';
+
             $x1 = $min_x - $padding;
             $y1 = $min_y - $padding;
             $x2 = $max_x + $padding;
-            $y2 = $max_y + $padding;
+            $y2 = $max_y + $bot_padding;
 
             // Core alpha: 0% opacity → 127 (transparent), 100% → 0 (opaque)
             $core_alpha = (int)(127 - ($opacity / 100 * 127));
 
             // Draw feathered edge (outer rings more transparent)
+            $radius = 40;
             for ($f = $feather; $f >= 0; $f--) {
                 $t = $feather > 0 ? ($f / $feather) : 0;
                 $a = (int)($core_alpha + $t * (127 - $core_alpha));
                 $a = min(126, $a);
                 $c = imagecolorallocatealpha($this->im, $bg_r, $bg_g, $bg_b, $a);
-                imagefilledrectangle($this->im, $x1 - $f, $y1 - $f, $x2 + $f, $y2 + $f, $c);
+                $this->_imagefilledroundedrect($this->im, $x1 - $f, $y1 - $f, $x2 + $f, $y2 + $f, $radius + $f, $c, $corners);
             }
+        }
+    }
+
+    /**
+     * Draw a filled rounded rectangle.
+     */
+    private function _imagefilledroundedrect($im, $x1, $y1, $x2, $y2, $r, $color, $corners = 'all')
+    {
+        $r = min($r, (int)(($x2 - $x1) / 2), (int)(($y2 - $y1) / 2));
+        $tl = ($corners === 'all' || $corners === 'top');
+        $tr = ($corners === 'all' || $corners === 'top');
+        $bl = ($corners === 'all' || $corners === 'bottom');
+        $br = ($corners === 'all' || $corners === 'bottom');
+        $rt = ($tl || $tr) ? $r : 0;
+        $rb = ($bl || $br) ? $r : 0;
+        // Center
+        imagefilledrectangle($im, $x1 + ($tl ? $r : 0), $y1, $x2 - ($tr ? $r : 0), $y2, $color);
+        // Left bar
+        imagefilledrectangle($im, $x1, $y1 + $rt, $x1 + max($rt, $rb) - 1, $y2 - $rb, $color);
+        // Right bar
+        imagefilledrectangle($im, $x2 - max($rt, $rb) + 1, $y1 + $rt, $x2, $y2 - $rb, $color);
+        // Top-left
+        if ($tl) {
+            imagefilledarc($im, $x1 + $r, $y1 + $r, $r * 2, $r * 2, 180, 270, $color, IMG_ARC_PIE);
+        } else {
+            imagefilledrectangle($im, $x1, $y1, $x1 + $r - 1, $y1 + $rt, $color);
+        }
+        // Top-right
+        if ($tr) {
+            imagefilledarc($im, $x2 - $r, $y1 + $r, $r * 2, $r * 2, 270, 360, $color, IMG_ARC_PIE);
+        } else {
+            imagefilledrectangle($im, $x2 - $r + 1, $y1, $x2, $y1 + $rt, $color);
+        }
+        // Bottom-left
+        if ($bl) {
+            imagefilledarc($im, $x1 + $r, $y2 - $r, $r * 2, $r * 2, 90, 180, $color, IMG_ARC_PIE);
+        } else {
+            imagefilledrectangle($im, $x1, $y2 - $rb, $x1 + $r - 1, $y2, $color);
+        }
+        // Bottom-right
+        if ($br) {
+            imagefilledarc($im, $x2 - $r, $y2 - $r, $r * 2, $r * 2, 0, 90, $color, IMG_ARC_PIE);
+        } else {
+            imagefilledrectangle($im, $x2 - $r + 1, $y2 - $rb, $x2, $y2, $color);
         }
     }
 

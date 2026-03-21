@@ -7,7 +7,7 @@ Public musician portfolio and gig calendar at glennbennett.com. Showcases origin
 | Component | Version |
 |-----------|---------|
 | Framework | CodeIgniter 3 |
-| PHP (production web) | 7.2 |
+| PHP (production web) | 8.3 |
 | PHP (local) | 8.4 |
 | Database | MySQL (MariaDB 10.6 on production) |
 | Admin theme | AdminLTE 2.4.2 (skin-blue-light) |
@@ -227,7 +227,81 @@ lftp glennbennett -e "mirror --reverse --exclude-glob-from ~/.lftp/exclude-list 
 
 After deploying new schema changes, log in to admin and visit `/migrate` to run pending migrations.
 
-**Important:** Production runs PHP 7.2 for web requests. Do not deploy `vendor/` or code requiring PHP 8.1+. Use raw PHP/cURL for any runtime dependencies (see `Google_auth.php`, `Ses_email.php`).
+**Important:** Do not deploy `vendor/`. Use raw PHP/cURL for any runtime dependencies (see `Google_auth.php`, `Ses_email.php`).
+
+## PHP 8.3 Upgrade (InMotion + CodeIgniter 3)
+
+Production was upgraded from PHP 7.2 to **PHP 8.3** on 2026-03-21. This required a patch to CodeIgniter 3's core because PHP 8.2 deprecated dynamic properties and CI3 uses them everywhere. This section documents exactly what was done so other CI3 projects on InMotion can follow the same pattern.
+
+### The Problem
+
+CodeIgniter 3 creates dynamic properties on its core classes (Loader, Controller, etc.) — hundreds of them. PHP 8.2+ fires an `E_DEPRECATED` warning for every single one. CI3's built-in error handler (`_error_handler` in `system/core/Common.php`) catches these and displays them to visitors, even when `display_errors` is off.
+
+### What Didn't Work
+
+| Approach | Why It Failed |
+|----------|---------------|
+| `error_reporting(E_ALL & ~E_DEPRECATED)` in `index.php` | CI3's `_error_handler` checks `error_reporting()` but the handler still runs and displays errors via `show_php_error()` |
+| `ini_set('display_errors', 0)` in `index.php` | CI3's display check uses `str_ireplace(array('off','none','no','false','null'), '', ini_get('display_errors'))` — the string `'0'` is NOT in that list, so it evaluates as truthy |
+| `ini_set('display_errors', 'off')` in `index.php` | CI3 replaces PHP's error handler before the display_errors setting takes effect |
+| Custom `set_error_handler()` before `require CodeIgniter.php` | CI3 immediately replaces it with its own handler during bootstrap |
+
+### What Worked — Two Changes
+
+**Change 1: `.htaccess` handler**
+
+Change the AddHandler from `ea-php72` to `ea-php83`:
+
+```apache
+# php -- BEGIN cPanel-generated handler, do not edit
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php83 .php .php7 .phtml
+</IfModule>
+# php -- END cPanel-generated handler, do not edit
+```
+
+The handler name must match an EasyApache package installed on the server. On InMotion, `ea-php83` is confirmed working. `ea-php84` returns 406 errors (not installed). Check available versions via SSH: `ls /opt/cpanel/ea-php*/root/usr/bin/php`.
+
+**Change 2: Patch `system/core/Common.php`**
+
+In the `_error_handler()` function, add this block right after the `error_reporting()` check:
+
+```php
+// Should we ignore the error? We'll get the current error_reporting
+// level and add its bits with the severity bits to find out.
+if (($severity & error_reporting()) !== $severity)
+{
+    return;
+}
+
+// ---- ADD THIS BLOCK ----
+// PHP 8.2+ CI3 compatibility: suppress dynamic property deprecation
+if ($severity === E_DEPRECATED && strpos($message, 'Creation of dynamic property') !== false)
+{
+    return;
+}
+// ---- END BLOCK ----
+```
+
+This is the only approach that works because it intercepts the warning inside CI3's own error handler before it reaches `show_php_error()`.
+
+### Deployment Warning
+
+`system/` is normally gitignored and excluded from lftp deploys. This patched file must be deployed manually:
+
+```bash
+lftp glennbennett -e "put -O system/core/ system/core/Common.php; quit"
+```
+
+If CI3's `system/` folder is ever replaced or updated, **this patch must be reapplied**. The patch is safe — it only suppresses the specific "Creation of dynamic property" deprecation message and nothing else.
+
+### Applying to Other CI3 Projects
+
+1. Verify the server has PHP 8.3: `ls /opt/cpanel/ea-php83/`
+2. Patch `system/core/Common.php` with the block above
+3. Deploy the patched file manually via lftp (it's excluded from normal deploys)
+4. Change `.htaccess` handler to `ea-php83`
+5. Test immediately — if errors appear, revert `.htaccess` to `ea-php72`
 
 ## Local Setup
 

@@ -128,7 +128,7 @@
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <input type="number" id="text_bg_opacity" min="0" max="100" value="<?php echo $photo->text_bg_opacity ?>" class="form-control layout-range" style="width: 80px;">
                                     <span>%</span>
-                                    <input type="color" id="text_bg_color" value="<?php echo $photo->text_bg_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                                    <input type="color" id="text_bg_color" value="<?php echo $photo->text_bg_color ?: '#ffffff' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
                                 </div>
                             </div>
                         </div>
