@@ -123,6 +123,14 @@
                                     <span>px</span>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label>Text Background</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="text_bg_opacity" min="0" max="100" value="<?php echo $photo->text_bg_opacity ?>" class="form-control layout-range" style="width: 80px;">
+                                    <span>%</span>
+                                    <input type="color" id="text_bg_color" value="<?php echo $photo->text_bg_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                                </div>
+                            </div>
                         </div>
                         <div class="col-xs-4 text-center">
                             <small class="text-muted">Up</small>
@@ -230,6 +238,8 @@ $(document).ready(function() {
                 + '&shadow_offset=' + getVal('shadow_offset')
                 + '&stroke_width=' + getVal('stroke_width')
                 + '&stroke_color=' + encodeURIComponent($('#stroke_color').val())
+                + '&text_bg_opacity=' + getVal('text_bg_opacity')
+                + '&text_bg_color=' + encodeURIComponent($('#text_bg_color').val())
                 + '&t=' + Date.now();
             $('#previewImage').attr('src', src);
         }, 300);
@@ -283,7 +293,9 @@ $(document).ready(function() {
             glow_color:         $('#glow_color').val(),
             shadow_offset:      getVal('shadow_offset'),
             stroke_width:       getVal('stroke_width'),
-            stroke_color:       $('#stroke_color').val()
+            stroke_color:       $('#stroke_color').val(),
+            text_bg_opacity:    getVal('text_bg_opacity'),
+            text_bg_color:      $('#text_bg_color').val()
         };
 
         $.post('<?php echo site_url("admin/save_template_photo_defaults") ?>', data, function() {

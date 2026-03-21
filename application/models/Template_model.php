@@ -11,6 +11,7 @@ class Template_model extends MY_Model {
 		'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
 		'location_font_size', 'location_margin_top', 'font_color',
 		'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color',
+		'text_bg_opacity', 'text_bg_color',
 	];
 
 	public function generate_for_background($bg_id)

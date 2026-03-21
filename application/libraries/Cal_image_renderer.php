@@ -13,6 +13,10 @@ class Cal_image_renderer {
     private $shadow_offset;
     private $stroke_width;
     private $stroke_color_rgb;
+    private $measure_only = false;
+    private $measured_lines = [];
+    private $current_section = '';
+    private $_tp = []; // text params for _render_text_lines
 
     /**
      * Render text onto a background image (original method)
@@ -140,6 +144,7 @@ class Cal_image_renderer {
     {
         $font_bold = $font_dir . 'GEORGIAB.TTF';
         $font_regular = $font_dir . 'GEORGIA.TTF';
+        $font_title = $font_dir . 'Aladin-Regular.ttf';
 
         $hex = isset($layout['font_color']) ? ltrim($layout['font_color'], '#') : '000000';
         $r = hexdec(substr($hex, 0, 2));
@@ -171,38 +176,126 @@ class Cal_image_renderer {
         $time = isset($texts['time']) ? $texts['time'] : '';
         $location = isset($texts['location']) ? $texts['location'] : '';
 
-        // Start entire text block at Vertical Position
-        $this->y = $summary_margin_top;
-
-        // Title header: "Glenn Bennett" / "Performs" in Aladdin font
-        $font_title = $font_dir . 'Aladin-Regular.ttf';
         $title_font_size = isset($layout['title_font_size']) ? (int) $layout['title_font_size'] : 72;
         $subtitle_font_size = isset($layout['subtitle_font_size']) ? (int) $layout['subtitle_font_size'] : 48;
 
-        $this->print_line(['text' => 'Glenn Bennett', 'font' => $font_title, 'font_size' => $title_font_size], $text_offset, $text_color);
-        $this->print_line(['text' => 'Performs', 'font' => $font_title, 'font_size' => $subtitle_font_size], $text_offset, $text_color);
-        $this->y += 30;
+        // Store params for _render_text_lines
+        $this->_tp = [
+            'font_bold' => $font_bold, 'font_title' => $font_title,
+            'text_offset' => $text_offset, 'text_color' => $text_color,
+            'summary_margin_top' => $summary_margin_top,
+            'title_font_size' => $title_font_size, 'subtitle_font_size' => $subtitle_font_size,
+            'summary_font_size' => $summary_font_size,
+            'date_font_size' => $date_font_size, 'date_margin_top' => $date_margin_top,
+            'time_font_size' => $time_font_size, 'time_margin_top' => $time_margin_top,
+            'location_font_size' => $location_font_size, 'location_margin_top' => $location_margin_top,
+            'summary' => $summary, 'date' => $date, 'time' => $time, 'location' => $location,
+        ];
 
-        // Print summary with long-text wrapping
-        $this->_print_wrapped($summary, $font_bold, $summary_font_size, $text_offset, $text_color);
+        // Text background boxes: measure first, draw boxes, then render text
+        $text_bg_opacity = isset($layout['text_bg_opacity']) ? (int) $layout['text_bg_opacity'] : 0;
 
-        // Date
-        $this->y += $date_margin_top;
-        $this->_print_wrapped($date, $font_bold, $date_font_size, $text_offset, $text_color);
+        if ($text_bg_opacity > 0) {
+            // Phase 1: Measure all text positions
+            $this->measure_only = true;
+            $this->measured_lines = [];
+            $this->_render_text_lines();
+            $this->measure_only = false;
 
-        // Time
-        $this->y += $time_margin_top;
-        $this->_print_wrapped($time, $font_bold, $time_font_size, $text_offset, $text_color);
-
-        // Location
-        $this->y += $location_margin_top;
-        if ($location) {
-            $this->_print_wrapped($location, $font_bold, $location_font_size, $text_offset, $text_color);
+            // Phase 2: Draw feathered transparent boxes
+            $this->_draw_text_backgrounds($layout);
         }
 
-        // Footer: website URL
+        // Phase 3: Render text (or only phase if no bg boxes)
+        $this->_render_text_lines();
+    }
+
+    /**
+     * Render all text lines (header + details sections).
+     * Used in both measure and render passes.
+     */
+    private function _render_text_lines()
+    {
+        $p = $this->_tp;
+
+        $this->y = $p['summary_margin_top'];
+        $this->current_section = 'header';
+
+        $this->print_line(['text' => 'Glenn Bennett', 'font' => $p['font_title'], 'font_size' => $p['title_font_size']], $p['text_offset'], $p['text_color']);
+        $this->print_line(['text' => 'Performs', 'font' => $p['font_title'], 'font_size' => $p['subtitle_font_size']], $p['text_offset'], $p['text_color']);
+        $this->y += 30;
+
+        $this->current_section = 'details';
+
+        $this->_print_wrapped($p['summary'], $p['font_bold'], $p['summary_font_size'], $p['text_offset'], $p['text_color']);
+
+        $this->y += $p['date_margin_top'];
+        $this->_print_wrapped($p['date'], $p['font_bold'], $p['date_font_size'], $p['text_offset'], $p['text_color']);
+
+        $this->y += $p['time_margin_top'];
+        $this->_print_wrapped($p['time'], $p['font_bold'], $p['time_font_size'], $p['text_offset'], $p['text_color']);
+
+        $this->y += $p['location_margin_top'];
+        if ($p['location']) {
+            $this->_print_wrapped($p['location'], $p['font_bold'], $p['location_font_size'], $p['text_offset'], $p['text_color']);
+        }
+
         $this->y += 20;
-        $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $font_bold, 'font_size' => 22], $text_offset, $text_color);
+        $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $p['font_bold'], 'font_size' => 22], $p['text_offset'], $p['text_color']);
+    }
+
+    /**
+     * Draw feathered semi-transparent boxes behind text sections.
+     */
+    private function _draw_text_backgrounds($layout)
+    {
+        $opacity = isset($layout['text_bg_opacity']) ? (int) $layout['text_bg_opacity'] : 0;
+        if ($opacity <= 0 || empty($this->measured_lines)) return;
+
+        $hex = isset($layout['text_bg_color']) ? ltrim($layout['text_bg_color'], '#') : '000000';
+        $bg_r = hexdec(substr($hex, 0, 2));
+        $bg_g = hexdec(substr($hex, 2, 2));
+        $bg_b = hexdec(substr($hex, 4, 2));
+
+        $padding = 20;
+        $feather = 15;
+
+        foreach (['header', 'details'] as $section) {
+            $lines = [];
+            foreach ($this->measured_lines as $line) {
+                if ($line['section'] === $section) $lines[] = $line;
+            }
+            if (empty($lines)) continue;
+
+            $min_x = PHP_INT_MAX;
+            $max_x = 0;
+            $min_y = PHP_INT_MAX;
+            $max_y = 0;
+
+            foreach ($lines as $line) {
+                $min_x = min($min_x, $line['x']);
+                $max_x = max($max_x, $line['x'] + $line['width']);
+                $min_y = min($min_y, $line['y'] - $line['ascent']);
+                $max_y = max($max_y, $line['y'] + $line['descent']);
+            }
+
+            $x1 = $min_x - $padding;
+            $y1 = $min_y - $padding;
+            $x2 = $max_x + $padding;
+            $y2 = $max_y + $padding;
+
+            // Core alpha: 0% opacity → 127 (transparent), 100% → 0 (opaque)
+            $core_alpha = (int)(127 - ($opacity / 100 * 127));
+
+            // Draw feathered edge (outer rings more transparent)
+            for ($f = $feather; $f >= 0; $f--) {
+                $t = $feather > 0 ? ($f / $feather) : 0;
+                $a = (int)($core_alpha + $t * (127 - $core_alpha));
+                $a = min(126, $a);
+                $c = imagecolorallocatealpha($this->im, $bg_r, $bg_g, $bg_b, $a);
+                imagefilledrectangle($this->im, $x1 - $f, $y1 - $f, $x2 + $f, $y2 + $f, $c);
+            }
+        }
     }
 
     /**
@@ -544,6 +637,19 @@ class Cal_image_renderer {
 
         $this->x = ($this->image_width / 2) - ($text_width / 2) + $offset;
         $this->y = $this->y - $text_height + 10;
+
+        // Measure mode: track bounds but don't render
+        if ($this->measure_only) {
+            $this->measured_lines[] = [
+                'section' => $this->current_section,
+                'x'       => $this->x,
+                'y'       => $this->y,
+                'width'   => $text_width,
+                'ascent'  => abs($text_box[7]),
+                'descent' => max(0, $text_box[1]),
+            ];
+            return;
+        }
 
         // Glow behind text
         if ($this->glow_radius > 0) {

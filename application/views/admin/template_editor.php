@@ -131,6 +131,14 @@
                                     <span>px</span>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <label>Text Background</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="number" id="text_bg_opacity" min="0" max="100" value="<?php echo $template->text_bg_opacity ?>" class="form-control layout-range" style="width: 80px;">
+                                    <span>%</span>
+                                    <input type="color" id="text_bg_color" value="<?php echo $template->text_bg_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
+                                </div>
+                            </div>
                         </div>
                         <div class="col-xs-4 text-center">
                             <small class="text-muted">Up</small>
@@ -275,6 +283,8 @@ $(document).ready(function() {
                 + '&glow_color=' + encodeURIComponent($('#glow_color').val())
                 + '&stroke_width=' + getVal('stroke_width')
                 + '&stroke_color=' + encodeURIComponent($('#stroke_color').val())
+                + '&text_bg_opacity=' + getVal('text_bg_opacity')
+                + '&text_bg_color=' + encodeURIComponent($('#text_bg_color').val())
                 + '&t=' + Date.now();
             $('#previewImage').attr('src', src);
         }, 300);
@@ -315,7 +325,9 @@ $(document).ready(function() {
         glow_color: '<?php echo $photo_defaults->glow_color ?: '#ffffff' ?>',
         shadow_offset: <?php echo (int) $photo_defaults->shadow_offset ?>,
         stroke_width: <?php echo (int) $photo_defaults->stroke_width ?>,
-        stroke_color: '<?php echo $photo_defaults->stroke_color ?: '#000000' ?>'
+        stroke_color: '<?php echo $photo_defaults->stroke_color ?: '#000000' ?>',
+        text_bg_opacity: <?php echo (int) $photo_defaults->text_bg_opacity ?>,
+        text_bg_color: '<?php echo $photo_defaults->text_bg_color ?: '#000000' ?>'
     };
 
     function setVal(id, val) {
@@ -349,6 +361,8 @@ $(document).ready(function() {
         setVal('shadow_offset', textDefaults.shadow_offset);
         setVal('stroke_width', textDefaults.stroke_width);
         $('#stroke_color').val(textDefaults.stroke_color);
+        setVal('text_bg_opacity', textDefaults.text_bg_opacity);
+        $('#text_bg_color').val(textDefaults.text_bg_color);
         refreshPreview();
     });
 
@@ -371,6 +385,8 @@ $(document).ready(function() {
                 setVal('shadow_offset', data.shadow_offset);
                 setVal('stroke_width', data.stroke_width);
                 $('#stroke_color').val(data.stroke_color);
+                if (data.text_bg_opacity !== undefined) setVal('text_bg_opacity', data.text_bg_opacity);
+                if (data.text_bg_color) $('#text_bg_color').val(data.text_bg_color);
                 refreshPreview();
             }
         });
@@ -397,7 +413,9 @@ $(document).ready(function() {
             glow_color:         $('#glow_color').val(),
             shadow_offset:      getVal('shadow_offset'),
             stroke_width:       getVal('stroke_width'),
-            stroke_color:       $('#stroke_color').val()
+            stroke_color:       $('#stroke_color').val(),
+            text_bg_opacity:    getVal('text_bg_opacity'),
+            text_bg_color:      $('#text_bg_color').val()
         }, function() {
             $btn.prop('disabled', false).html('<i class="fa fa-check"></i> Saved!');
             setTimeout(function() { $btn.html('<i class="fa fa-upload"></i> Save as BG Preset'); }, 2000);
@@ -445,7 +463,9 @@ $(document).ready(function() {
             glow_color:           $('#glow_color').val(),
             shadow_offset:        getVal('shadow_offset'),
             stroke_width:         getVal('stroke_width'),
-            stroke_color:         $('#stroke_color').val()
+            stroke_color:         $('#stroke_color').val(),
+            text_bg_opacity:      getVal('text_bg_opacity'),
+            text_bg_color:        $('#text_bg_color').val()
         };
 
         $.post('<?php echo site_url("admin/save_template_layout") ?>', data, function() {

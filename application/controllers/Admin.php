@@ -900,7 +900,8 @@ class Admin extends Admin_Controller {
 		$fields = ['text_offset', 'summary_margin_top', 'summary_font_size',
 			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
 			'location_font_size', 'location_margin_top', 'font_color',
-			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color'];
+			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color',
+			'text_bg_opacity', 'text_bg_color'];
 
 		$data = ['status' => 'ok'];
 		foreach ($fields as $f)
@@ -926,7 +927,8 @@ class Admin extends Admin_Controller {
 		$fields = ['text_offset', 'summary_margin_top', 'summary_font_size',
 			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
 			'location_font_size', 'location_margin_top', 'font_color',
-			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color'];
+			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color',
+			'text_bg_opacity', 'text_bg_color'];
 
 		$data = [];
 		foreach ($fields as $f)
@@ -1086,10 +1088,11 @@ class Admin extends Admin_Controller {
 			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
 			'location_font_size', 'location_margin_top',
 			'glow_radius', 'shadow_offset', 'stroke_width',
+			'text_bg_opacity',
 		];
 		$str_fields = [
 			'photo_glow_color', 'tint_color', 'font_color',
-			'glow_color', 'stroke_color',
+			'glow_color', 'stroke_color', 'text_bg_color',
 		];
 
 		$data = [];
@@ -1212,6 +1215,8 @@ class Admin extends Admin_Controller {
 			'shadow_offset'      => $this->input->get('shadow_offset') !== null ? (int) $this->input->get('shadow_offset') : (int) $photo->shadow_offset,
 			'stroke_width'       => $this->input->get('stroke_width') !== null ? (int) $this->input->get('stroke_width') : (int) $photo->stroke_width,
 			'stroke_color'       => $this->input->get('stroke_color') !== null ? $this->input->get('stroke_color') : $photo->stroke_color,
+			'text_bg_opacity'    => $this->input->get('text_bg_opacity') !== null ? (int) $this->input->get('text_bg_opacity') : (int) $photo->text_bg_opacity,
+			'text_bg_color'      => $this->input->get('text_bg_color') !== null ? $this->input->get('text_bg_color') : ($photo->text_bg_color ?: '#000000'),
 		];
 
 		$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, [
@@ -1301,6 +1306,8 @@ class Admin extends Admin_Controller {
 			'shadow_offset'       => (int) $this->input->post('shadow_offset'),
 			'stroke_width'        => (int) $this->input->post('stroke_width'),
 			'stroke_color'        => $this->input->post('stroke_color'),
+			'text_bg_opacity'     => (int) $this->input->post('text_bg_opacity'),
+			'text_bg_color'       => $this->input->post('text_bg_color'),
 		];
 
 		$this->template_model->save_layout($id, $layout_data);
@@ -1455,7 +1462,8 @@ class Admin extends Admin_Controller {
 			'text_offset', 'summary_margin_top', 'summary_font_size',
 			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
 			'location_font_size', 'location_margin_top',
-			'glow_radius', 'shadow_offset', 'stroke_width'
+			'glow_radius', 'shadow_offset', 'stroke_width',
+			'text_bg_opacity'
 		];
 
 		$layout = [];
@@ -1466,7 +1474,7 @@ class Admin extends Admin_Controller {
 				: (int) $template->$f;
 		}
 
-		$color_fields = ['photo_glow_color', 'font_color', 'glow_color', 'stroke_color'];
+		$color_fields = ['photo_glow_color', 'font_color', 'glow_color', 'stroke_color', 'text_bg_color'];
 		foreach ($color_fields as $f)
 		{
 			$layout[$f] = $this->input->get($f) !== null

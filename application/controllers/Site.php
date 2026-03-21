@@ -1206,6 +1206,8 @@ public function build_data($featured_id = null)
 			'shadow_offset'      => (int) $tpl->shadow_offset,
 			'stroke_width'       => (int) $tpl->stroke_width,
 			'stroke_color'       => $tpl->stroke_color,
+			'text_bg_opacity'    => (int) $tpl->text_bg_opacity,
+			'text_bg_color'      => $tpl->text_bg_color,
 		];
 	}
 
