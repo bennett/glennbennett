@@ -25,8 +25,7 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Match Pattern</th>
-                            <th>Match Type</th>
+                            <th>Type</th>
                             <th>Logo</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -36,31 +35,28 @@
                         <?php foreach ($venues as $venue): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($venue->name) ?></td>
-                                <td><code><?php echo htmlspecialchars($venue->match_pattern) ?></code></td>
-                                <td>
-                                    <span class="label label-info"><?php echo $venue->match_type ?></span>
-                                </td>
+                                <td><?php echo $venue->venue_type_name ?: '<span class="text-muted">—</span>' ?></td>
                                 <td>
                                     <?php if ($venue->venue_logo): ?>
                                         <img src="<?php echo $venue->venue_logo ?>" style="max-height: 40px;">
                                     <?php else: ?>
-                                        <span class="text-muted">None</span>
+                                        <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($venue->is_active): ?>
-                                        <span class="label label-success">Active</span>
+                                        <span class="label label-success" style="font-size: 13px; padding: 4px 8px;">Active</span>
                                     <?php else: ?>
-                                        <span class="label label-default">Inactive</span>
+                                        <span class="label label-default" style="font-size: 13px; padding: 4px 8px;">Inactive</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
                                     <a href="<?php echo site_url('admin/venue_edit/' . $venue->id) ?>"
-                                       class="btn btn-xs btn-info">
+                                       class="btn btn-sm btn-info">
                                         <i class="fa fa-edit"></i> Edit
                                     </a>
                                     <a href="<?php echo site_url('admin/venue_delete/' . $venue->id) ?>"
-                                       class="btn btn-xs btn-danger"
+                                       class="btn btn-sm btn-danger"
                                        onclick="return confirm('Delete this venue?')">
                                         <i class="fa fa-trash"></i>
                                     </a>

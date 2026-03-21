@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="<?php echo $url->assets ?>plugins/Ionicons/css/ionicons.min.css">
     <link rel="stylesheet" href="<?php echo $url->assets ?>css/app.css">
-    <link rel="stylesheet" href="<?php echo $url->assets ?>css/skins/skin-custom.css">
+    <link rel="stylesheet" href="<?php echo $url->assets ?>css/skins/skin-blue-light.css">
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700">
 
@@ -27,7 +27,7 @@
     <script src="<?php echo $url->assets ?>plugins/jquery-slimscroll/jquery.slimscroll.min.js"></script>
     <script src="<?php echo $url->assets ?>plugins/fastclick/lib/fastclick.js"></script>
 </head>
-<body class="hold-transition skin-custom sidebar-mini">
+<body class="hold-transition skin-blue-light sidebar-mini">
 <div class="wrapper">
 
     <!-- Main Header -->

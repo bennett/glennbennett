@@ -1,5 +1,43 @@
 # Changelog
 
+## 2026-03-20 — Template Editor UX, Naming, Background Normalization (WIP)
+
+### Changes
+- Template editor: back button and save moved to page header, save redirects to templates list, unsaved changes warning on all 3 editor pages
+- Admin theme switched to `skin-blue-light` with prominent blue active border on sidebar menu items
+- All backgrounds normalized to exactly 1200x630 (Facebook/OG standard), upload auto-resizes with cover-crop (allows up to 10% upscale, rejects smaller)
+- Upload progress shows resize details (original size, action taken, final size)
+- Naming system: photos default to `photo-{id}`, backgrounds to `bg-{id}`, templates to `{bg_name}_{photo_name}` — all click-to-rename inline
+- Background text presets: load/save text layout settings per background from within the template editor
+- Photo glow and text glow max increased from 10/30 to 40
+- Reset all templates to photo defaults
+- Migration system set up (from Playbook), 9 migration files for production deploy
+- Venue types and venue details tables, venue type assignment on templates
+- Artist photo editor with image adjustments (color, effects, tint)
+- Dropzone upload on both photos and backgrounds pages
+
+### Design Notes
+- **Orphaned templates:** When a background or photo is deleted, templates using it are marked `is_orphaned=1` instead of being deleted. This preserves the template's customized settings (photo position, text layout, glow, etc.) in case the asset is re-uploaded. Orphaned templates are shown with a broken-chain icon and can be bulk-deleted from the templates list.
+
+### Bug Fixes
+- Fixed photo positioning mismatch between defaults page and template editor (different background sizes)
+- Fixed browser caching of template previews after editing (added cache busting)
+
+### Files Modified
+| File | Change |
+|------|--------|
+| `application/controllers/Admin.php` | Rename endpoints, BG preset load/save, background resize to 1200x630, upload default naming, venue types/details CRUD |
+| `application/models/Template_model.php` | Auto-name templates on generation, inherit photo defaults |
+| `application/views/admin/template_editor.php` | Header buttons, BG preset buttons, reset in box headers, dirty tracking, redirect on save |
+| `application/views/admin/template_photo_defaults.php` | Header buttons, dirty tracking, redirect on save |
+| `application/views/admin/template_background_defaults.php` | Header buttons, dirty tracking, redirect on save |
+| `application/views/admin/templates.php` | Editable template names, cache-busted preview URLs |
+| `application/views/admin/template_photos.php` | Dropzone upload, editable names |
+| `application/views/admin/template_backgrounds.php` | Dropzone upload, editable names, resize feedback |
+| `application/views/admin/includes/header.php` | Switched to skin-blue-light |
+| `assets/admin/css/skins/skin-blue-light.css` | Active submenu: 9px blue border |
+| `database/migrations/` | 9 migration files for production schema updates |
+
 ## 2026-03-19 — Share Images with Short URLs
 
 ### Changes

@@ -46,22 +46,27 @@
                         <input type="color" id="font_color" value="<?php echo $layout->font_color ?: '#000000' ?>" class="layout-color" style="width: 60px; height: 34px; padding: 2px; cursor: pointer;">
                     </div>
                     <div class="form-group">
-                        <label>Glow: <span id="val_glow_radius"><?php echo $layout->glow_radius ?></span>px</label>
+                        <label>Glow</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="range" id="glow_radius" min="0" max="10" value="<?php echo $layout->glow_radius ?>" class="layout-range" style="flex: 1;">
+                            <input type="number" id="glow_radius" min="0" max="40" value="<?php echo $layout->glow_radius ?>" class="form-control layout-range" style="width: 80px;">
+                            <span>px</span>
                             <input type="color" id="glow_color" value="<?php echo $layout->glow_color ?: '#ffffff' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Stroke: <span id="val_stroke_width"><?php echo $layout->stroke_width ?></span>px</label>
+                        <label>Stroke</label>
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="range" id="stroke_width" min="0" max="6" value="<?php echo $layout->stroke_width ?>" class="layout-range" style="flex: 1;">
+                            <input type="number" id="stroke_width" min="0" max="6" value="<?php echo $layout->stroke_width ?>" class="form-control layout-range" style="width: 80px;">
+                            <span>px</span>
                             <input type="color" id="stroke_color" value="<?php echo $layout->stroke_color ?: '#000000' ?>" class="layout-color" style="width: 40px; height: 30px; padding: 2px; cursor: pointer;">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Shadow: <span id="val_shadow_offset"><?php echo $layout->shadow_offset ?></span>px</label>
-                        <input type="range" id="shadow_offset" min="0" max="8" value="<?php echo $layout->shadow_offset ?>" class="layout-range" style="width:100%">
+                        <label>Shadow</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="number" id="shadow_offset" min="0" max="8" value="<?php echo $layout->shadow_offset ?>" class="form-control layout-range" style="width: 80px;">
+                            <span>px</span>
+                        </div>
                     </div>
 
                     <hr>

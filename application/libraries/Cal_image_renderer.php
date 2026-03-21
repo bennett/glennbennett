@@ -61,6 +61,9 @@ class Cal_image_renderer {
             imagealphablending($photo, true);
             imagesavealpha($photo, true);
 
+            // Apply image adjustments to photo
+            $photo = $this->apply_photo_adjustments($photo, $layout);
+
             $photo_w = imagesx($photo);
             $photo_h = imagesy($photo);
 
@@ -270,6 +273,8 @@ class Cal_image_renderer {
             imagealphablending($photo, true);
             imagesavealpha($photo, true);
 
+            $photo = $this->apply_photo_adjustments($photo, $layout);
+
             $photo_w = imagesx($photo);
             $photo_h = imagesy($photo);
 
@@ -330,6 +335,195 @@ class Cal_image_renderer {
         $this->print_line(['text' => 'Keep up to date: GlennBennett.com/cal', 'font' => $font_bold, 'font_size' => 22], $text_offset, $text_color);
 
         return $this->im;
+    }
+
+    /**
+     * Apply image adjustments (brightness, contrast, etc.) to a photo resource
+     */
+    private function apply_photo_adjustments($photo, $layout)
+    {
+        $w = imagesx($photo);
+        $h = imagesy($photo);
+
+        // Grayscale
+        if ( ! empty($layout['grayscale'])) {
+            imagefilter($photo, IMG_FILTER_GRAYSCALE);
+        }
+
+        // Sepia (grayscale + colorize)
+        if ( ! empty($layout['sepia'])) {
+            imagefilter($photo, IMG_FILTER_GRAYSCALE);
+            imagefilter($photo, IMG_FILTER_COLORIZE, 90, 60, 30);
+        }
+
+        // Brightness (-100 to 100 in layout, maps to -255 to 255 for GD)
+        $brightness = isset($layout['brightness']) ? (int) $layout['brightness'] : 0;
+        if ($brightness !== 0) {
+            imagefilter($photo, IMG_FILTER_BRIGHTNESS, (int) ($brightness * 2.55));
+        }
+
+        // Contrast (-100 to 100 in layout; GD uses inverted scale: -100=max contrast, 100=min)
+        $contrast = isset($layout['contrast']) ? (int) $layout['contrast'] : 0;
+        if ($contrast !== 0) {
+            imagefilter($photo, IMG_FILTER_CONTRAST, -$contrast);
+        }
+
+        // Saturation (simulate via colorize toward gray)
+        $saturation = isset($layout['saturation']) ? (int) $layout['saturation'] : 0;
+        if ($saturation < 0) {
+            // Desaturate: blend with grayscale version
+            $gray = imagecreatetruecolor($w, $h);
+            imagealphablending($gray, false);
+            imagesavealpha($gray, true);
+            imagecopy($gray, $photo, 0, 0, 0, 0, $w, $h);
+            imagefilter($gray, IMG_FILTER_GRAYSCALE);
+            $amount = abs($saturation) / 100;
+            imagecopymerge($photo, $gray, 0, 0, 0, 0, $w, $h, (int) ($amount * 100));
+            imagedestroy($gray);
+        } elseif ($saturation > 0) {
+            // Boost: increase color intensity
+            imagefilter($photo, IMG_FILTER_COLORIZE, 0, 0, 0);
+            // Multiple small contrast bumps to simulate saturation boost
+            $steps = min(3, (int) ($saturation / 25));
+            for ($i = 0; $i < $steps; $i++) {
+                imagefilter($photo, IMG_FILTER_CONTRAST, -10);
+            }
+        }
+
+        // Sharpen
+        $sharpen = isset($layout['sharpen']) ? (int) $layout['sharpen'] : 0;
+        if ($sharpen > 0) {
+            $amount = min($sharpen, 5);
+            for ($i = 0; $i < $amount; $i++) {
+                imagefilter($photo, IMG_FILTER_MEAN_REMOVAL);
+            }
+        }
+
+        // Blur
+        $blur = isset($layout['blur']) ? (int) $layout['blur'] : 0;
+        if ($blur > 0) {
+            $passes = min($blur, 10);
+            for ($i = 0; $i < $passes; $i++) {
+                imagefilter($photo, IMG_FILTER_GAUSSIAN_BLUR);
+            }
+        }
+
+        // Hue rotation (pixel-level HSL manipulation)
+        $hue_rotate = isset($layout['hue_rotate']) ? (int) $layout['hue_rotate'] : 0;
+        if ($hue_rotate !== 0) {
+            $photo = $this->rotate_hue($photo, $hue_rotate);
+        }
+
+        // Tint (colorize with specified color and amount)
+        $tint_amount = isset($layout['tint_amount']) ? (int) $layout['tint_amount'] : 0;
+        $tint_color = isset($layout['tint_color']) ? $layout['tint_color'] : null;
+        if ($tint_amount > 0 && $tint_color) {
+            $hex = ltrim($tint_color, '#');
+            $tr = hexdec(substr($hex, 0, 2));
+            $tg = hexdec(substr($hex, 2, 2));
+            $tb = hexdec(substr($hex, 4, 2));
+            // Scale colorize effect by tint_amount (0-100)
+            $scale = $tint_amount / 100;
+            imagefilter($photo, IMG_FILTER_COLORIZE,
+                (int) (($tr - 128) * $scale),
+                (int) (($tg - 128) * $scale),
+                (int) (($tb - 128) * $scale)
+            );
+        }
+
+        // Opacity (apply to alpha channel)
+        $opacity = isset($layout['opacity']) ? (int) $layout['opacity'] : 100;
+        if ($opacity < 100 && $opacity >= 0) {
+            for ($px = 0; $px < $w; $px++) {
+                for ($py = 0; $py < $h; $py++) {
+                    $rgba = imagecolorat($photo, $px, $py);
+                    $a = ($rgba >> 24) & 0x7F;
+                    if ($a < 127) {
+                        $new_a = min(127, (int) ($a + (127 - $a) * (1 - $opacity / 100)));
+                        $c = imagecolorallocatealpha($photo,
+                            ($rgba >> 16) & 0xFF,
+                            ($rgba >> 8) & 0xFF,
+                            $rgba & 0xFF,
+                            $new_a
+                        );
+                        imagesetpixel($photo, $px, $py, $c);
+                    }
+                }
+            }
+        }
+
+        return $photo;
+    }
+
+    /**
+     * Rotate hue of an image by degrees
+     */
+    private function rotate_hue($img, $degrees)
+    {
+        $w = imagesx($img);
+        $h = imagesy($img);
+
+        for ($x = 0; $x < $w; $x++) {
+            for ($y = 0; $y < $h; $y++) {
+                $rgba = imagecolorat($img, $x, $y);
+                $a = ($rgba >> 24) & 0x7F;
+                $r = ($rgba >> 16) & 0xFF;
+                $g = ($rgba >> 8) & 0xFF;
+                $b = $rgba & 0xFF;
+
+                // RGB to HSL
+                $r1 = $r / 255; $g1 = $g / 255; $b1 = $b / 255;
+                $max = max($r1, $g1, $b1);
+                $min = min($r1, $g1, $b1);
+                $l = ($max + $min) / 2;
+
+                if ($max == $min) {
+                    $h2 = $s = 0;
+                } else {
+                    $d = $max - $min;
+                    $s = $l > 0.5 ? $d / (2 - $max - $min) : $d / ($max + $min);
+                    if ($max == $r1) $h2 = ($g1 - $b1) / $d + ($g1 < $b1 ? 6 : 0);
+                    elseif ($max == $g1) $h2 = ($b1 - $r1) / $d + 2;
+                    else $h2 = ($r1 - $g1) / $d + 4;
+                    $h2 /= 6;
+                }
+
+                // Rotate hue
+                $h2 = fmod($h2 + $degrees / 360, 1.0);
+                if ($h2 < 0) $h2 += 1;
+
+                // HSL to RGB
+                if ($s == 0) {
+                    $r2 = $g2 = $b2 = $l;
+                } else {
+                    $q = $l < 0.5 ? $l * (1 + $s) : $l + $s - $l * $s;
+                    $p = 2 * $l - $q;
+                    $r2 = $this->hue_to_rgb($p, $q, $h2 + 1/3);
+                    $g2 = $this->hue_to_rgb($p, $q, $h2);
+                    $b2 = $this->hue_to_rgb($p, $q, $h2 - 1/3);
+                }
+
+                $c = imagecolorallocatealpha($img,
+                    (int) round($r2 * 255),
+                    (int) round($g2 * 255),
+                    (int) round($b2 * 255),
+                    $a
+                );
+                imagesetpixel($img, $x, $y, $c);
+            }
+        }
+
+        return $img;
+    }
+
+    private function hue_to_rgb($p, $q, $t)
+    {
+        if ($t < 0) $t += 1;
+        if ($t > 1) $t -= 1;
+        if ($t < 1/6) return $p + ($q - $p) * 6 * $t;
+        if ($t < 1/2) return $q;
+        if ($t < 2/3) return $p + ($q - $p) * (2/3 - $t) * 6;
+        return $p;
     }
 
     private function print_line($msg, $offset, $color)

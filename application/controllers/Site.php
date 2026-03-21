@@ -808,6 +808,8 @@ public function build_data($featured_id = null)
 		{
 			$this->load->model('share_image_model');
 			$this->load->model('template_model');
+			$this->load->model('venue_model');
+			$this->load->model('venue_type_model');
 			$this->load->library('cal_image_renderer');
 
 			$share = $this->share_image_model->get_by_hash($hash);
@@ -826,7 +828,9 @@ public function build_data($featured_id = null)
 			$font_dir = FCPATH . 'fonts/';
 			$is_past = ($start_date < time());
 
-			$templates = $this->template_model->get_active_with_assets();
+			// Resolve templates using 3-tier priority
+			$templates = $this->_resolve_templates($summary);
+
 			if ( ! empty($templates))
 			{
 				$day = (int) date("j", $start_date);
@@ -836,28 +840,7 @@ public function build_data($featured_id = null)
 				$bg_file = FCPATH . 'imgs/template-backgrounds/' . $tpl->bg_filename;
 				$photo_file = FCPATH . 'imgs/template-photos/' . $tpl->photo_filename;
 
-				$layout_values = [
-					'photo_x'            => (int) $tpl->photo_x,
-					'photo_y'            => (int) $tpl->photo_y,
-					'photo_scale'        => (int) $tpl->photo_scale,
-					'photo_glow_radius'  => (int) $tpl->photo_glow_radius,
-					'photo_glow_color'   => $tpl->photo_glow_color,
-					'text_offset'        => (int) $tpl->text_offset,
-					'summary_font_size'  => (int) $tpl->summary_font_size,
-					'summary_margin_top' => (int) $tpl->summary_margin_top,
-					'date_font_size'     => (int) $tpl->date_font_size,
-					'date_margin_top'    => (int) $tpl->date_margin_top,
-					'time_font_size'     => (int) $tpl->time_font_size,
-					'time_margin_top'    => (int) $tpl->time_margin_top,
-					'location_font_size' => (int) $tpl->location_font_size,
-					'location_margin_top'=> (int) $tpl->location_margin_top,
-					'font_color'         => $tpl->font_color,
-					'glow_radius'        => (int) $tpl->glow_radius,
-					'glow_color'         => $tpl->glow_color,
-					'shadow_offset'      => (int) $tpl->shadow_offset,
-					'stroke_width'       => (int) $tpl->stroke_width,
-					'stroke_color'       => $tpl->stroke_color,
-				];
+				$layout_values = $this->_template_layout_values($tpl);
 
 				$texts = [
 					'summary'  => $summary,
@@ -876,6 +859,96 @@ public function build_data($featured_id = null)
 				}
 			}
 
+			// Fallback to old cal_images system if no template rendered
+			if ( ! isset($im) || ! $im)
+			{
+				$this->load->model('cal_image_model');
+				$images = $this->cal_image_model->get_active();
+
+				if ( ! empty($images))
+				{
+					$selected_image = null;
+
+					// Check for venue-specific images (legacy cal_images)
+					$venues = $this->venue_model->get_active_with_images();
+					$alpha_summary = strtoupper(preg_replace('/[^a-zA-Z]/', '', $summary));
+					$venue_image_ids = [];
+
+					foreach ($venues as $venue)
+					{
+						$match = false;
+						if ($venue->match_type === 'exact' && $summary === $venue->match_pattern) $match = true;
+						elseif ($venue->match_type === 'contains' && strpos($summary, $venue->match_pattern) !== false) $match = true;
+						elseif ($venue->match_type === 'alpha_only')
+						{
+							$alpha_pattern = strtoupper(preg_replace('/[^a-zA-Z]/', '', $venue->match_pattern));
+							if (strpos($alpha_summary, $alpha_pattern) !== false) $match = true;
+						}
+						if ($match && ! empty($venue->images))
+						{
+							foreach ($venue->images as $vi) $venue_image_ids[] = $vi->id;
+						}
+					}
+
+					if ( ! empty($venue_image_ids))
+					{
+						$day = (int) date("j", $start_date);
+						$idx = $day % count($venue_image_ids);
+						$selected_image = $this->cal_image_model->getById($venue_image_ids[$idx]);
+					}
+
+					if ( ! $selected_image)
+					{
+						$day = (int) date("j", $start_date);
+						$idx = $day % count($images);
+						$selected_image = $images[$idx];
+					}
+
+					$img_file = FCPATH . $selected_image->image_path . $selected_image->filename;
+					$db_layout = $this->cal_image_model->get_layout($selected_image->id);
+					$layout_values = [
+						'text_offset'         => (int) $db_layout->text_offset,
+						'summary_font_size'   => (int) $db_layout->summary_font_size,
+						'summary_margin_top'  => (int) $db_layout->summary_margin_top,
+						'date_font_size'      => (int) $db_layout->date_font_size,
+						'date_margin_top'     => (int) $db_layout->date_margin_top,
+						'time_font_size'      => (int) $db_layout->time_font_size,
+						'time_margin_top'     => (int) $db_layout->time_margin_top,
+						'location_font_size'  => (int) $db_layout->location_font_size,
+						'location_margin_top' => (int) $db_layout->location_margin_top,
+					];
+					$texts = [
+						'summary'  => $summary,
+						'date'     => $date,
+						'time'     => $time,
+						'location' => $location,
+					];
+					$im = $this->cal_image_renderer->render($img_file, $texts, $layout_values, $font_dir);
+				}
+				else
+				{
+					// Last resort: original static Cal-Event-N.jpg files
+					$no_of_bg_images = 25;
+					$image_no = (int) date("j", $start_date);
+					$image_no = ($image_no % ($no_of_bg_images - 1)) - 1;
+					if ($image_no < 0) $image_no = 0;
+
+					$img_file = FCPATH . 'imgs/Cal-Event-' . $image_no . '.jpg';
+					$layout_values = [
+						'text_offset' => -200, 'summary_font_size' => 36, 'summary_margin_top' => 260,
+						'date_font_size' => 24, 'date_margin_top' => 25, 'time_font_size' => 36,
+						'time_margin_top' => 25, 'location_font_size' => 24, 'location_margin_top' => 25,
+					];
+					$texts = [
+						'summary'  => $summary,
+						'date'     => $date,
+						'time'     => $time,
+						'location' => $location,
+					];
+					$im = $this->cal_image_renderer->render($img_file, $texts, $layout_values, $font_dir);
+				}
+			}
+
 			if ( ! isset($im) || ! $im)
 			{
 				show_error('Could not render image', 500);
@@ -888,7 +961,7 @@ public function build_data($featured_id = null)
 			return;
 		}
 
-		// --- Legacy query string behavior (unchanged) ---
+		// --- Legacy query string behavior ---
 		$start_date = $this->input->get('start_date');
 		$end_date = $this->input->get('end_date');
 		$summary = $this->input->get('summary');
@@ -907,6 +980,7 @@ public function build_data($featured_id = null)
 		// --- Resolve image + layout from DB, fallback to config ---
 		$this->load->model('cal_image_model');
 		$this->load->model('venue_model');
+		$this->load->model('venue_type_model');
 		$this->load->model('template_model');
 		$this->load->library('cal_image_renderer');
 
@@ -919,8 +993,8 @@ public function build_data($featured_id = null)
 		$font_dir = FCPATH . 'fonts/';
 		$im = null;
 
-		// --- Priority 1: New templates (background + photo composite) ---
-		$templates = $this->template_model->get_active_with_assets();
+		// --- Priority 1-3: Templates with venue-aware selection ---
+		$templates = $this->_resolve_templates($summary);
 
 		if ( ! empty($templates))
 		{
@@ -940,34 +1014,12 @@ public function build_data($featured_id = null)
 
 			if (file_exists($bg_file) && file_exists($photo_file))
 			{
-				$layout_values = [
-					'photo_x'            => (int) $tpl->photo_x,
-					'photo_y'            => (int) $tpl->photo_y,
-					'photo_scale'        => (int) $tpl->photo_scale,
-					'photo_glow_radius'  => (int) $tpl->photo_glow_radius,
-					'photo_glow_color'   => $tpl->photo_glow_color,
-					'text_offset'        => (int) $tpl->text_offset,
-					'summary_font_size'  => (int) $tpl->summary_font_size,
-					'summary_margin_top' => (int) $tpl->summary_margin_top,
-					'date_font_size'     => (int) $tpl->date_font_size,
-					'date_margin_top'    => (int) $tpl->date_margin_top,
-					'time_font_size'     => (int) $tpl->time_font_size,
-					'time_margin_top'    => (int) $tpl->time_margin_top,
-					'location_font_size' => (int) $tpl->location_font_size,
-					'location_margin_top'=> (int) $tpl->location_margin_top,
-					'font_color'         => $tpl->font_color,
-					'glow_radius'        => (int) $tpl->glow_radius,
-					'glow_color'         => $tpl->glow_color,
-					'shadow_offset'      => (int) $tpl->shadow_offset,
-					'stroke_width'       => (int) $tpl->stroke_width,
-					'stroke_color'       => $tpl->stroke_color,
-				];
-
+				$layout_values = $this->_template_layout_values($tpl);
 				$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, $texts, $layout_values, $font_dir);
 			}
 		}
 
-		// --- Priority 2: Old cal_images system ---
+		// --- Fallback: Old cal_images system ---
 		if ( ! $im)
 		{
 			$img_file = null;
@@ -978,7 +1030,7 @@ public function build_data($featured_id = null)
 			{
 				$selected_image = null;
 
-				// Check for venue-specific images
+				// Check for venue-specific images (legacy cal_images)
 				if ($summary)
 				{
 					$venues = $this->venue_model->get_active_with_images();
@@ -1089,6 +1141,74 @@ public function build_data($featured_id = null)
 		header('Content-type: image/jpeg');
 		imagepng($im);
 		imagedestroy($im);
+	}
+
+	/**
+	 * Resolve templates using 3-tier priority:
+	 * 1. Venue-specific templates (venue_templates)
+	 * 2. Venue type templates (venue_type_templates)
+	 * 3. All active templates (fallback)
+	 */
+	private function _resolve_templates($summary)
+	{
+		$this->load->model('venue_model');
+		$this->load->model('venue_type_model');
+		$this->load->model('template_model');
+
+		// Try to match venue from summary
+		$venue = $this->venue_model->match_venue($summary);
+
+		if ($venue)
+		{
+			// Priority 1: Venue-specific templates
+			$templates = $this->venue_model->get_venue_templates_with_assets($venue->id);
+			if ( ! empty($templates))
+			{
+				return $templates;
+			}
+
+			// Priority 2: Venue type templates
+			if ($venue->venue_type_id)
+			{
+				$templates = $this->venue_type_model->get_templates_with_assets($venue->venue_type_id);
+				if ( ! empty($templates))
+				{
+					return $templates;
+				}
+			}
+		}
+
+		// Priority 3: All active templates
+		return $this->template_model->get_active_with_assets();
+	}
+
+	/**
+	 * Extract layout values array from a template row.
+	 */
+	private function _template_layout_values($tpl)
+	{
+		return [
+			'photo_x'            => (int) $tpl->photo_x,
+			'photo_y'            => (int) $tpl->photo_y,
+			'photo_scale'        => (int) $tpl->photo_scale,
+			'photo_glow_radius'  => (int) $tpl->photo_glow_radius,
+			'photo_glow_color'   => $tpl->photo_glow_color,
+			'text_offset'        => (int) $tpl->text_offset,
+			'summary_font_size'  => (int) $tpl->summary_font_size,
+			'summary_margin_top' => (int) $tpl->summary_margin_top,
+			'date_font_size'     => (int) $tpl->date_font_size,
+			'date_margin_top'    => (int) $tpl->date_margin_top,
+			'time_font_size'     => (int) $tpl->time_font_size,
+			'time_margin_top'    => (int) $tpl->time_margin_top,
+			'location_font_size' => (int) $tpl->location_font_size,
+			'location_margin_top'=> (int) $tpl->location_margin_top,
+			'font_color'         => $tpl->font_color,
+			'glow_radius'        => (int) $tpl->glow_radius,
+			'glow_color'         => $tpl->glow_color,
+			'shadow_offset'      => (int) $tpl->shadow_offset,
+			'stroke_width'       => (int) $tpl->stroke_width,
+			'stroke_color'       => $tpl->stroke_color,
+		];
 	}
 
 }

@@ -10,6 +10,8 @@ class Admin extends Admin_Controller {
 		parent::__construct();
 		$this->load->model('cal_image_model');
 		$this->load->model('venue_model');
+		$this->load->model('venue_type_model');
+		$this->load->model('venue_detail_model');
 		$this->load->model('template_background_model');
 		$this->load->model('template_photo_model');
 		$this->load->model('template_model');
@@ -303,7 +305,12 @@ class Admin extends Admin_Controller {
 		$this->page_data['page']->title = 'Venues';
 		$this->page_data['page']->menu = 'venues';
 
-		$this->page_data['venues'] = $this->venue_model->get();
+		$this->page_data['venues'] = $this->db
+			->select('venues.*, venue_types.name as venue_type_name')
+			->join('venue_types', 'venue_types.id = venues.venue_type_id', 'left')
+			->order_by('venues.name', 'ASC')
+			->get('venues')
+			->result();
 
 		$this->load->view('admin/venues', $this->page_data);
 	}
@@ -314,6 +321,10 @@ class Admin extends Admin_Controller {
 		$this->page_data['page']->menu = 'venues';
 
 		$this->page_data['venue'] = $id ? $this->venue_model->getById($id) : null;
+		$this->page_data['venue_types'] = $this->venue_type_model->get_active();
+		$this->page_data['templates'] = $this->template_model->get_all_with_assets();
+		$this->page_data['venue_details'] = $id ? $this->venue_detail_model->get_by_venue($id) : null;
+		$this->page_data['venue_template_ids'] = $id ? $this->venue_model->get_venue_template_ids($id) : [];
 
 		$this->load->view('admin/venue_edit', $this->page_data);
 	}
@@ -337,6 +348,7 @@ class Admin extends Admin_Controller {
 			'match_pattern' => $this->input->post('match_pattern'),
 			'match_type'    => $this->input->post('match_type'),
 			'is_active'     => $this->input->post('is_active') ? 1 : 0,
+			'venue_type_id' => $this->input->post('venue_type_id') ?: null,
 		];
 
 		// Handle venue logo upload
@@ -367,6 +379,23 @@ class Admin extends Admin_Controller {
 			$id = $this->venue_model->create($data);
 		}
 
+		// Sync venue-specific templates
+		$template_ids = $this->input->post('template_ids') ?: [];
+		$this->venue_model->sync_templates($id, $template_ids);
+
+		// Save venue details
+		$details = [
+			'drive_time_mins'      => $this->input->post('drive_time_mins') ?: null,
+			'setup_time_mins'      => $this->input->post('setup_time_mins') ?: null,
+			'default_start_time'   => $this->input->post('default_start_time') ?: null,
+			'default_length_mins'  => $this->input->post('default_length_mins') ?: null,
+			'special_requirements' => $this->input->post('special_requirements'),
+			'address'              => $this->input->post('address'),
+			'city'                 => $this->input->post('city'),
+			'state'                => $this->input->post('state'),
+		];
+		$this->venue_detail_model->save_for_venue($id, $details);
+
 		$this->session->set_flashdata('alert', 'Venue saved successfully.');
 		$this->session->set_flashdata('alert-type', 'success');
 		redirect('admin/venues', 'refresh');
@@ -379,6 +408,92 @@ class Admin extends Admin_Controller {
 		$this->session->set_flashdata('alert', 'Venue deleted.');
 		$this->session->set_flashdata('alert-type', 'success');
 		redirect('admin/venues', 'refresh');
+	}
+
+	// --- Venue Types ---
+
+	public function venue_types()
+	{
+		$this->page_data['page']->title = 'Venue Types';
+		$this->page_data['page']->menu = 'venue_types';
+
+		$types = $this->db
+			->order_by("CASE WHEN slug = 'general' THEN 0 ELSE 1 END", '', FALSE)
+			->order_by('name', 'ASC')
+			->get('venue_types')
+			->result();
+
+		foreach ($types as &$vt)
+		{
+			$vt->template_count = $this->venue_type_model->get_template_count($vt->id);
+		}
+
+		$this->page_data['venue_types'] = $types;
+
+		$this->load->view('admin/venue_types', $this->page_data);
+	}
+
+	public function venue_type_edit($id = null)
+	{
+		$this->page_data['page']->title = $id ? 'Edit Venue Type' : 'Add Venue Type';
+		$this->page_data['page']->menu = 'venue_types';
+
+		$this->page_data['venue_type'] = $id ? $this->venue_type_model->getById($id) : null;
+		$this->page_data['templates'] = $this->template_model->get_all_with_assets();
+		$this->page_data['assigned_template_ids'] = $id ? $this->venue_type_model->get_template_ids($id) : [];
+
+		$this->load->view('admin/venue_type_edit', $this->page_data);
+	}
+
+	public function venue_type_save()
+	{
+		$this->load->library('form_validation');
+
+		$this->form_validation->set_rules('name', 'Name', 'trim|required');
+
+		if ($this->form_validation->run() == FALSE)
+		{
+			$id = $this->input->post('id');
+			$this->venue_type_edit($id);
+			return;
+		}
+
+		$name = $this->input->post('name');
+
+		$data = [
+			'name'       => $name,
+			'slug'       => url_title($name, '-', TRUE),
+			'sort_order' => (int) $this->input->post('sort_order'),
+			'is_active'  => $this->input->post('is_active') ? 1 : 0,
+		];
+
+		$id = $this->input->post('id');
+
+		if ($id)
+		{
+			$this->venue_type_model->update($id, $data);
+		}
+		else
+		{
+			$id = $this->venue_type_model->create($data);
+		}
+
+		// Sync templates
+		$template_ids = $this->input->post('template_ids') ?: [];
+		$this->venue_type_model->sync_templates($id, $template_ids);
+
+		$this->session->set_flashdata('alert', 'Venue type saved successfully.');
+		$this->session->set_flashdata('alert-type', 'success');
+		redirect('admin/venue_types', 'refresh');
+	}
+
+	public function venue_type_delete($id)
+	{
+		$this->venue_type_model->delete($id);
+
+		$this->session->set_flashdata('alert', 'Venue type deleted.');
+		$this->session->set_flashdata('alert-type', 'success');
+		redirect('admin/venue_types', 'refresh');
 	}
 
 	// --- Template Backgrounds ---
@@ -397,28 +512,66 @@ class Admin extends Admin_Controller {
 	{
 		$config['upload_path']   = FCPATH . 'imgs/template-backgrounds/';
 		$config['allowed_types'] = 'jpg|jpeg|png';
-		$config['max_size']      = 5120;
+		$config['max_size']      = 20480;
 		$config['encrypt_name']  = TRUE;
 
 		$this->load->library('upload', $config);
 
+		$is_ajax = $this->input->is_ajax_request();
+
 		if ( ! $this->upload->do_upload('image_file'))
 		{
+			if ($is_ajax)
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error', 'message' => $this->upload->display_errors('', '')]));
+				return;
+			}
 			$this->session->set_flashdata('alert', $this->upload->display_errors('', ''));
 			$this->session->set_flashdata('alert-type', 'danger');
 		}
 		else
 		{
 			$upload = $this->upload->data();
+			$file_path = $upload['full_path'];
+			$orig_width = $upload['image_width'];
+			$orig_height = $upload['image_height'];
+
+			// Resize/crop to exactly 1200x630
+			$resize_info = $this->_resize_background($file_path, 1200, 630);
+			$width = $resize_info ? $resize_info['width'] : $orig_width;
+			$height = $resize_info ? $resize_info['height'] : $orig_height;
+			$resize_action = $resize_info ? $resize_info['action'] : 'none';
 
 			$bg_id = $this->template_background_model->create([
 				'filename'      => $upload['file_name'],
-				'original_name' => $upload['orig_name'],
-				'width'         => $upload['image_width'],
-				'height'        => $upload['image_height'],
+				'original_name' => 'bg-temp',
+				'width'         => $width,
+				'height'        => $height,
 			]);
 
+			// Set default name using the ID
+			$bg_name = 'bg-' . $bg_id;
+			$this->template_background_model->update($bg_id, ['original_name' => $bg_name]);
+
 			$this->template_model->generate_for_background($bg_id);
+
+			if ($is_ajax)
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode([
+						'status'          => 'ok',
+						'id'              => $bg_id,
+						'filename'        => $upload['file_name'],
+						'original_name'   => $bg_name,
+						'width'           => $width,
+						'height'          => $height,
+						'original_width'  => $orig_width,
+						'original_height' => $orig_height,
+						'resize_action'   => $resize_action,
+					]));
+				return;
+			}
 
 			$this->session->set_flashdata('alert', 'Background uploaded successfully.');
 			$this->session->set_flashdata('alert-type', 'success');
@@ -467,6 +620,7 @@ class Admin extends Admin_Controller {
 				unlink($file_path);
 			}
 			$this->template_background_model->delete($id);
+			$this->template_model->orphan_by_background($id);
 
 			$this->session->set_flashdata('alert', 'Background deleted.');
 			$this->session->set_flashdata('alert-type', 'success');
@@ -514,6 +668,7 @@ class Admin extends Admin_Controller {
 		];
 
 		$this->template_background_model->update($id, $data);
+		$this->template_model->unready_by_background($id);
 
 		$this->output
 			->set_content_type('application/json')
@@ -577,11 +732,11 @@ class Admin extends Admin_Controller {
 		imagedestroy($im);
 	}
 
-	// --- Template Photos ---
+	// --- Artist Photos ---
 
 	public function template_photos()
 	{
-		$this->page_data['page']->title = 'Template Photos';
+		$this->page_data['page']->title = 'Artist Photos';
 		$this->page_data['page']->menu = 'template_photos';
 
 		$this->page_data['photos'] = $this->template_photo_model->get();
@@ -593,34 +748,51 @@ class Admin extends Admin_Controller {
 	{
 		$config['upload_path']   = FCPATH . 'imgs/template-photos/';
 		$config['allowed_types'] = 'png';
-		$config['max_size']      = 5120;
+		$config['max_size']      = 20480;
 		$config['encrypt_name']  = TRUE;
 
 		$this->load->library('upload', $config);
 
 		if ( ! $this->upload->do_upload('image_file'))
 		{
-			$this->session->set_flashdata('alert', $this->upload->display_errors('', ''));
-			$this->session->set_flashdata('alert-type', 'danger');
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode([
+					'status'  => 'error',
+					'message' => $this->upload->display_errors('', ''),
+				]));
+			return;
 		}
-		else
-		{
-			$upload = $this->upload->data();
 
-			$photo_id = $this->template_photo_model->create([
+		$upload = $this->upload->data();
+		$file_path = $upload['full_path'];
+
+		// Auto-trim transparent pixels
+		$trimmed = $this->_trim_transparent($file_path);
+		$width  = $trimmed ? $trimmed['width'] : $upload['image_width'];
+		$height = $trimmed ? $trimmed['height'] : $upload['image_height'];
+
+		$photo_id = $this->template_photo_model->create([
+			'filename'      => $upload['file_name'],
+			'original_name' => 'photo-temp',
+			'width'         => $width,
+			'height'        => $height,
+		]);
+
+		// Set default name using the ID
+		$photo_name = 'photo-' . $photo_id;
+		$this->template_photo_model->update($photo_id, ['original_name' => $photo_name]);
+
+		$this->template_model->generate_for_photo($photo_id);
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode([
+				'status'        => 'ok',
+				'id'            => $photo_id,
 				'filename'      => $upload['file_name'],
-				'original_name' => $upload['orig_name'],
-				'width'         => $upload['image_width'],
-				'height'        => $upload['image_height'],
-			]);
-
-			$this->template_model->generate_for_photo($photo_id);
-
-			$this->session->set_flashdata('alert', 'Photo uploaded successfully.');
-			$this->session->set_flashdata('alert-type', 'success');
-		}
-
-		redirect('admin/template_photos', 'refresh');
+				'original_name' => $photo_name,
+				'width'         => $width,
+				'height'        => $height,
+			]));
 	}
 
 	public function toggle_template_photo($id)
@@ -651,6 +823,117 @@ class Admin extends Admin_Controller {
 		redirect('admin/template_photos', 'refresh');
 	}
 
+	public function rename_template_photo()
+	{
+		$id = $this->input->post('id');
+		$name = trim($this->input->post('name'));
+
+		if ( ! $id || $name === '')
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error']));
+			return;
+		}
+
+		$this->template_photo_model->update($id, ['original_name' => $name]);
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok', 'name' => $name]));
+	}
+
+	public function rename_template_background()
+	{
+		$id = $this->input->post('id');
+		$name = trim($this->input->post('name'));
+
+		if ( ! $id || $name === '')
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error']));
+			return;
+		}
+
+		$this->template_background_model->update($id, ['original_name' => $name]);
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok', 'name' => $name]));
+	}
+
+	public function rename_template()
+	{
+		$id = $this->input->post('id');
+		$name = trim($this->input->post('name'));
+
+		if ( ! $id || $name === '')
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error']));
+			return;
+		}
+
+		$this->template_model->update($id, ['name' => $name]);
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok', 'name' => $name]));
+	}
+
+	public function get_bg_text_preset($bg_id)
+	{
+		$bg = $this->template_background_model->getById($bg_id);
+
+		if ( ! $bg)
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error']));
+			return;
+		}
+
+		$fields = ['text_offset', 'summary_margin_top', 'summary_font_size',
+			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
+			'location_font_size', 'location_margin_top', 'font_color',
+			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color'];
+
+		$data = ['status' => 'ok'];
+		foreach ($fields as $f)
+		{
+			$data[$f] = $bg->$f;
+		}
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode($data));
+	}
+
+	public function save_bg_text_preset()
+	{
+		$bg_id = $this->input->post('background_id');
+
+		if ( ! $bg_id)
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error']));
+			return;
+		}
+
+		$fields = ['text_offset', 'summary_margin_top', 'summary_font_size',
+			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
+			'location_font_size', 'location_margin_top', 'font_color',
+			'glow_radius', 'glow_color', 'shadow_offset', 'stroke_width', 'stroke_color'];
+
+		$data = [];
+		foreach ($fields as $f)
+		{
+			if ($this->input->post($f) !== null)
+			{
+				$data[$f] = $this->input->post($f);
+			}
+		}
+
+		$this->template_background_model->update($bg_id, $data);
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode(['status' => 'ok']));
+	}
+
 	public function delete_template_photo($id)
 	{
 		$photo = $this->template_photo_model->getById($id);
@@ -663,12 +946,98 @@ class Admin extends Admin_Controller {
 				unlink($file_path);
 			}
 			$this->template_photo_model->delete($id);
+			$this->template_model->orphan_by_photo($id);
 
 			$this->session->set_flashdata('alert', 'Photo deleted.');
 			$this->session->set_flashdata('alert-type', 'success');
 		}
 
 		redirect('admin/template_photos', 'refresh');
+	}
+
+	public function artist_photo_editor($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ( ! $photo)
+		{
+			redirect('admin/template_photos', 'refresh');
+		}
+
+		$this->page_data['page']->title = 'Edit Artist Photo';
+		$this->page_data['page']->menu = 'template_photos';
+		$this->page_data['photo'] = $photo;
+
+		$this->load->view('admin/artist_photo_editor', $this->page_data);
+	}
+
+	public function save_artist_photo($id)
+	{
+		$photo = $this->template_photo_model->getById($id);
+
+		if ( ! $photo)
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error', 'message' => 'Photo not found']));
+			return;
+		}
+
+		$image_data = $this->input->post('image_data');
+
+		if ( ! $image_data)
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error', 'message' => 'No image data']));
+			return;
+		}
+
+		// Decode base64 PNG
+		$image_data = preg_replace('#^data:image/png;base64,#', '', $image_data);
+		$decoded = base64_decode($image_data);
+
+		if ( ! $decoded)
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'error', 'message' => 'Invalid image data']));
+			return;
+		}
+
+		$file_path = FCPATH . 'imgs/template-photos/' . $photo->filename;
+		file_put_contents($file_path, $decoded);
+
+		// Auto-trim
+		$trimmed = $this->_trim_transparent($file_path);
+
+		// Get new dimensions
+		$info = getimagesize($file_path);
+		$width = $info[0];
+		$height = $info[1];
+
+		$this->template_photo_model->update($id, [
+			'width'  => $width,
+			'height' => $height,
+		]);
+
+		// Mark templates using this photo as not ready
+		$this->template_model->unready_by_photo($id);
+
+		// Bust cached previews for templates using this photo
+		$templates = $this->db->where('photo_id', $id)->get('templates')->result();
+		foreach ($templates as $tpl)
+		{
+			$cache_file = FCPATH . 'imgs/template-cache/preview-' . $tpl->id . '.png';
+			if (file_exists($cache_file))
+			{
+				unlink($cache_file);
+			}
+		}
+
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode([
+				'status' => 'ok',
+				'width'  => $width,
+				'height' => $height,
+			]));
 	}
 
 	public function template_photo_defaults($id)
@@ -680,7 +1049,7 @@ class Admin extends Admin_Controller {
 			redirect('admin/template_photos', 'refresh');
 		}
 
-		$this->page_data['page']->title = 'Photo Position Defaults';
+		$this->page_data['page']->title = 'Artist Photo Defaults';
 		$this->page_data['page']->menu = 'template_photos';
 		$this->page_data['photo'] = $photo;
 
@@ -700,15 +1069,41 @@ class Admin extends Admin_Controller {
 	{
 		$id = $this->input->post('photo_id');
 
-		$data = [
-			'photo_x'           => (int) $this->input->post('photo_x'),
-			'photo_y'           => (int) $this->input->post('photo_y'),
-			'photo_scale'       => (int) $this->input->post('photo_scale'),
-			'photo_glow_radius' => (int) $this->input->post('photo_glow_radius'),
-			'photo_glow_color'  => $this->input->post('photo_glow_color'),
+		$int_fields = [
+			'photo_x', 'photo_y', 'photo_scale', 'photo_glow_radius',
+			'brightness', 'contrast', 'saturation', 'sharpen', 'blur', 'opacity',
+			'sepia', 'grayscale', 'hue_rotate', 'tint_amount',
+			'text_offset', 'summary_margin_top', 'summary_font_size',
+			'date_font_size', 'date_margin_top', 'time_font_size', 'time_margin_top',
+			'location_font_size', 'location_margin_top',
+			'glow_radius', 'shadow_offset', 'stroke_width',
+		];
+		$str_fields = [
+			'photo_glow_color', 'tint_color', 'font_color',
+			'glow_color', 'stroke_color',
 		];
 
-		$this->template_photo_model->update($id, $data);
+		$data = [];
+		foreach ($int_fields as $f)
+		{
+			if ($this->input->post($f) !== NULL)
+			{
+				$data[$f] = (int) $this->input->post($f);
+			}
+		}
+		foreach ($str_fields as $f)
+		{
+			if ($this->input->post($f) !== NULL)
+			{
+				$data[$f] = $this->input->post($f);
+			}
+		}
+
+		if ( ! empty($data))
+		{
+			$this->template_photo_model->update($id, $data);
+			$this->template_model->unready_by_photo($id);
+		}
 
 		$this->output
 			->set_content_type('application/json')
@@ -731,17 +1126,21 @@ class Admin extends Admin_Controller {
 			show_404();
 		}
 
-		// Use a background for preview
+		// Use a background for preview — prefer 1200x627 (most common size) for consistent positioning
 		$bg_id = $this->input->get('bg_id');
 		$bg = $bg_id ? $this->template_background_model->getById($bg_id) : null;
 
 		if ( ! $bg)
 		{
-			$bg = $this->db->where('is_active', 1)->limit(1)->get('template_backgrounds')->row();
+			$bg = $this->db->where('is_active', 1)->where('width', 1200)->limit(1)->get('template_backgrounds')->row();
 		}
 		if ( ! $bg)
 		{
-			$bg = $this->db->limit(1)->get('template_backgrounds')->row();
+			$bg = $this->db->where('is_active', 1)->order_by('width', 'DESC')->limit(1)->get('template_backgrounds')->row();
+		}
+		if ( ! $bg)
+		{
+			$bg = $this->db->order_by('width', 'DESC')->limit(1)->get('template_backgrounds')->row();
 		}
 
 		if ( ! $bg)
@@ -764,22 +1163,33 @@ class Admin extends Admin_Controller {
 			'photo_scale'       => $this->input->get('photo_scale') !== null ? (int) $this->input->get('photo_scale') : (int) $photo->photo_scale,
 			'photo_glow_radius' => $this->input->get('photo_glow_radius') !== null ? (int) $this->input->get('photo_glow_radius') : (int) $photo->photo_glow_radius,
 			'photo_glow_color'  => $this->input->get('photo_glow_color') !== null ? $this->input->get('photo_glow_color') : $photo->photo_glow_color,
-			// Use background text defaults
-			'text_offset'        => (int) $bg->text_offset,
-			'summary_margin_top' => (int) $bg->summary_margin_top,
-			'summary_font_size'  => (int) $bg->summary_font_size,
-			'date_font_size'     => (int) $bg->date_font_size,
-			'date_margin_top'    => (int) $bg->date_margin_top,
-			'time_font_size'     => (int) $bg->time_font_size,
-			'time_margin_top'    => (int) $bg->time_margin_top,
-			'location_font_size' => (int) $bg->location_font_size,
-			'location_margin_top'=> (int) $bg->location_margin_top,
-			'font_color'         => $bg->font_color,
-			'glow_radius'        => (int) $bg->glow_radius,
-			'glow_color'         => $bg->glow_color,
-			'shadow_offset'      => (int) $bg->shadow_offset,
-			'stroke_width'       => (int) $bg->stroke_width,
-			'stroke_color'       => $bg->stroke_color,
+			'brightness'        => $this->input->get('brightness') !== null ? (int) $this->input->get('brightness') : (int) $photo->brightness,
+			'contrast'          => $this->input->get('contrast') !== null ? (int) $this->input->get('contrast') : (int) $photo->contrast,
+			'saturation'        => $this->input->get('saturation') !== null ? (int) $this->input->get('saturation') : (int) $photo->saturation,
+			'sharpen'           => $this->input->get('sharpen') !== null ? (int) $this->input->get('sharpen') : (int) $photo->sharpen,
+			'blur'              => $this->input->get('blur') !== null ? (int) $this->input->get('blur') : (int) $photo->blur,
+			'opacity'           => $this->input->get('opacity') !== null ? (int) $this->input->get('opacity') : (int) $photo->opacity,
+			'sepia'             => $this->input->get('sepia') !== null ? (int) $this->input->get('sepia') : (int) $photo->sepia,
+			'grayscale'         => $this->input->get('grayscale') !== null ? (int) $this->input->get('grayscale') : (int) $photo->grayscale,
+			'hue_rotate'        => $this->input->get('hue_rotate') !== null ? (int) $this->input->get('hue_rotate') : (int) $photo->hue_rotate,
+			'tint_color'        => $this->input->get('tint_color') !== null ? $this->input->get('tint_color') : $photo->tint_color,
+			'tint_amount'       => $this->input->get('tint_amount') !== null ? (int) $this->input->get('tint_amount') : (int) $photo->tint_amount,
+			// Use photo text defaults
+			'text_offset'        => $this->input->get('text_offset') !== null ? (int) $this->input->get('text_offset') : (int) $photo->text_offset,
+			'summary_margin_top' => $this->input->get('summary_margin_top') !== null ? (int) $this->input->get('summary_margin_top') : (int) $photo->summary_margin_top,
+			'summary_font_size'  => $this->input->get('summary_font_size') !== null ? (int) $this->input->get('summary_font_size') : (int) $photo->summary_font_size,
+			'date_font_size'     => $this->input->get('date_font_size') !== null ? (int) $this->input->get('date_font_size') : (int) $photo->date_font_size,
+			'date_margin_top'    => $this->input->get('date_margin_top') !== null ? (int) $this->input->get('date_margin_top') : (int) $photo->date_margin_top,
+			'time_font_size'     => $this->input->get('time_font_size') !== null ? (int) $this->input->get('time_font_size') : (int) $photo->time_font_size,
+			'time_margin_top'    => $this->input->get('time_margin_top') !== null ? (int) $this->input->get('time_margin_top') : (int) $photo->time_margin_top,
+			'location_font_size' => $this->input->get('location_font_size') !== null ? (int) $this->input->get('location_font_size') : (int) $photo->location_font_size,
+			'location_margin_top'=> $this->input->get('location_margin_top') !== null ? (int) $this->input->get('location_margin_top') : (int) $photo->location_margin_top,
+			'font_color'         => $this->input->get('font_color') !== null ? $this->input->get('font_color') : $photo->font_color,
+			'glow_radius'        => $this->input->get('glow_radius') !== null ? (int) $this->input->get('glow_radius') : (int) $photo->glow_radius,
+			'glow_color'         => $this->input->get('glow_color') !== null ? $this->input->get('glow_color') : $photo->glow_color,
+			'shadow_offset'      => $this->input->get('shadow_offset') !== null ? (int) $this->input->get('shadow_offset') : (int) $photo->shadow_offset,
+			'stroke_width'       => $this->input->get('stroke_width') !== null ? (int) $this->input->get('stroke_width') : (int) $photo->stroke_width,
+			'stroke_color'       => $this->input->get('stroke_color') !== null ? $this->input->get('stroke_color') : $photo->stroke_color,
 		];
 
 		$im = $this->cal_image_renderer->render_template($bg_file, $photo_file, [
@@ -806,7 +1216,16 @@ class Admin extends Admin_Controller {
 		$this->page_data['page']->title = 'Share Templates';
 		$this->page_data['page']->menu = 'templates';
 
-		$this->page_data['templates'] = $this->template_model->get_all_with_assets();
+		$templates = $this->template_model->get_all_with_assets();
+
+		// Attach venue type and venue assignment labels
+		foreach ($templates as &$tpl)
+		{
+			$tpl->venue_types = $this->template_model->get_venue_types_for_template($tpl->id);
+			$tpl->venues = $this->template_model->get_venues_for_template($tpl->id);
+		}
+
+		$this->page_data['templates'] = $templates;
 
 		$this->load->view('admin/templates', $this->page_data);
 	}
@@ -824,6 +1243,13 @@ class Admin extends Admin_Controller {
 		$this->page_data['page']->menu = 'templates';
 
 		$this->page_data['template'] = $template;
+		$this->page_data['photo_defaults'] = $this->template_photo_model->getById($template->photo_id);
+
+		// Venue type and venue assignment data
+		$this->page_data['venue_types'] = $this->venue_type_model->get_active();
+		$this->page_data['venues'] = $this->venue_model->getByWhere(['is_active' => 1], ['order' => ['name', 'ASC']]);
+		$this->page_data['assigned_type_ids'] = $this->template_model->get_venue_type_ids($id);
+		$this->page_data['assigned_venue_ids'] = $this->template_model->get_venue_ids($id);
 
 		$this->load->view('admin/template_editor', $this->page_data);
 	}
@@ -857,9 +1283,28 @@ class Admin extends Admin_Controller {
 
 		$this->template_model->save_layout($id, $layout_data);
 
+		// Bust cached preview
+		$cache_file = FCPATH . 'imgs/template-cache/preview-' . $id . '.png';
+		if (file_exists($cache_file)) unlink($cache_file);
+
 		$this->output
 			->set_content_type('application/json')
 			->set_output(json_encode(['status' => 'ok']));
+	}
+
+	public function save_template_assignments()
+	{
+		$id = $this->input->post('template_id');
+
+		$type_id = $this->input->post('venue_type_id');
+		$venue_id = $this->input->post('venue_id');
+
+		$this->template_model->sync_venue_types($id, $type_id ? [$type_id] : []);
+		$this->template_model->sync_venues($id, $venue_id ? [$venue_id] : []);
+
+		$this->session->set_flashdata('alert', 'Template assignment saved.');
+		$this->session->set_flashdata('alert-type', 'success');
+		redirect('admin/template_editor/' . $id, 'refresh');
 	}
 
 	public function toggle_template($id)
@@ -890,6 +1335,64 @@ class Admin extends Admin_Controller {
 		redirect('admin/templates', 'refresh');
 	}
 
+	public function toggle_template_ready($id)
+	{
+		$template = $this->template_model->getById($id);
+
+		if ( ! $template)
+		{
+			if ($this->input->is_ajax_request())
+			{
+				$this->output->set_content_type('application/json')
+					->set_output(json_encode(['status' => 'error']));
+				return;
+			}
+			redirect('admin/templates', 'refresh');
+		}
+
+		$new_state = $template->is_ready ? 0 : 1;
+		$this->template_model->update($id, ['is_ready' => $new_state]);
+
+		if ($this->input->is_ajax_request())
+		{
+			$this->output->set_content_type('application/json')
+				->set_output(json_encode(['status' => 'ok', 'is_ready' => $new_state]));
+			return;
+		}
+
+		redirect('admin/templates', 'refresh');
+	}
+
+	public function delete_template($id)
+	{
+		$template = $this->template_model->getById($id);
+
+		if ($template && $template->is_orphaned)
+		{
+			$this->template_model->delete($id);
+
+			$cache_file = FCPATH . 'imgs/template-cache/preview-' . $id . '.png';
+			if (file_exists($cache_file))
+			{
+				unlink($cache_file);
+			}
+
+			$this->session->set_flashdata('alert', 'Template deleted.');
+			$this->session->set_flashdata('alert-type', 'success');
+		}
+
+		redirect('admin/templates', 'refresh');
+	}
+
+	public function delete_orphaned_templates()
+	{
+		$count = $this->template_model->delete_orphaned();
+
+		$this->session->set_flashdata('alert', $count . ' orphaned template(s) deleted.');
+		$this->session->set_flashdata('alert-type', 'success');
+		redirect('admin/templates', 'refresh');
+	}
+
 	public function preview_template($id)
 	{
 		$template = $this->template_model->get_with_assets($id);
@@ -897,6 +1400,17 @@ class Admin extends Admin_Controller {
 		if ( ! $template)
 		{
 			show_404();
+		}
+
+		// Serve cached preview if no query string overrides (e.g. templates list)
+		$has_overrides = ! empty($_SERVER['QUERY_STRING']);
+		$cache_file = FCPATH . 'imgs/template-cache/preview-' . $id . '.png';
+
+		if ( ! $has_overrides && file_exists($cache_file))
+		{
+			header('Content-Type: image/png');
+			readfile($cache_file);
+			return;
 		}
 
 		$bg_file = FCPATH . 'imgs/template-backgrounds/' . $template->bg_filename;
@@ -944,6 +1458,12 @@ class Admin extends Admin_Controller {
 		if ( ! $im)
 		{
 			show_404();
+		}
+
+		// Cache when serving without overrides
+		if ( ! $has_overrides)
+		{
+			imagepng($im, $cache_file);
 		}
 
 		header('Content-Type: image/png');
@@ -1019,5 +1539,181 @@ class Admin extends Admin_Controller {
 		}
 
 		redirect('admin/test_email', 'refresh');
+	}
+
+	/**
+	 * Resize a background image if it exceeds max dimensions.
+	 * Returns ['width' => int, 'height' => int] or FALSE if no resize needed.
+	 */
+	private function _resize_background($file_path, $target_w = 1200, $target_h = 630)
+	{
+		$info = getimagesize($file_path);
+		if ( ! $info) return FALSE;
+
+		$w = $info[0];
+		$h = $info[1];
+
+		// Already exact size
+		if ($w === $target_w && $h === $target_h)
+		{
+			return ['width' => $w, 'height' => $h, 'action' => 'none', 'original_width' => $w, 'original_height' => $h];
+		}
+
+		// Reject images that would need more than 10% upscale
+		$scale_needed = max($target_w / $w, $target_h / $h);
+		if ($scale_needed > 1.1)
+		{
+			return ['width' => $w, 'height' => $h, 'action' => 'too_small', 'original_width' => $w, 'original_height' => $h];
+		}
+
+		$type = $info[2];
+		if ($type === IMAGETYPE_JPEG)
+		{
+			$src = imagecreatefromjpeg($file_path);
+		}
+		else
+		{
+			$src = imagecreatefrompng($file_path);
+		}
+
+		if ( ! $src) return FALSE;
+
+		// Cover-crop: scale to fill target, then center-crop
+		$scale = max($target_w / $w, $target_h / $h);
+		$action = $scale > 1.0 ? 'upscaled' : 'downsized';
+
+		// Scale then crop in one step via source offsets
+		$src_w = (int) round($target_w / $scale);
+		$src_h = (int) round($target_h / $scale);
+		$src_x = (int) round(($w - $src_w) / 2);
+		$src_y = (int) round(($h - $src_h) / 2);
+
+		$dst = imagecreatetruecolor($target_w, $target_h);
+
+		if ($type === IMAGETYPE_PNG)
+		{
+			imagesavealpha($dst, TRUE);
+			imagealphablending($dst, FALSE);
+			$transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+			imagefill($dst, 0, 0, $transparent);
+		}
+
+		imagecopyresampled($dst, $src, 0, 0, $src_x, $src_y, $target_w, $target_h, $src_w, $src_h);
+
+		if ($type === IMAGETYPE_JPEG)
+		{
+			imagejpeg($dst, $file_path, 90);
+		}
+		else
+		{
+			imagepng($dst, $file_path);
+		}
+
+		imagedestroy($src);
+		imagedestroy($dst);
+
+		return [
+			'width'           => $target_w,
+			'height'          => $target_h,
+			'action'          => $action,
+			'original_width'  => $w,
+			'original_height' => $h,
+		];
+	}
+
+	/**
+	 * Trim transparent/white pixels from a PNG and resize to max dimension.
+	 * Overwrites the file in place and returns ['width' => int, 'height' => int]
+	 * or FALSE if processing failed.
+	 */
+	private function _trim_transparent($file_path, $max_dim = 1024)
+	{
+		$src = imagecreatefrompng($file_path);
+
+		if ( ! $src)
+		{
+			return FALSE;
+		}
+
+		$w = imagesx($src);
+		$h = imagesy($src);
+
+		// Find bounding box of content pixels (not transparent, not white/near-white)
+		$top = $h;
+		$bottom = 0;
+		$left = $w;
+		$right = 0;
+
+		for ($y = 0; $y < $h; $y++)
+		{
+			for ($x = 0; $x < $w; $x++)
+			{
+				$rgba = imagecolorat($src, $x, $y);
+				$r = ($rgba >> 16) & 0xFF;
+				$g = ($rgba >> 8) & 0xFF;
+				$b = $rgba & 0xFF;
+				$alpha = ($rgba >> 24) & 0x7F;
+
+				$is_content = ($alpha < 120) && !($r > 240 && $g > 240 && $b > 240);
+
+				if ($is_content)
+				{
+					if ($y < $top) $top = $y;
+					if ($y > $bottom) $bottom = $y;
+					if ($x < $left) $left = $x;
+					if ($x > $right) $right = $x;
+				}
+			}
+		}
+
+		// Fully transparent — nothing to do
+		if ($top > $bottom || $left > $right)
+		{
+			imagedestroy($src);
+			return FALSE;
+		}
+
+		$crop_w = $right - $left + 1;
+		$crop_h = $bottom - $top + 1;
+		$needs_trim = !($top === 0 && $left === 0 && $right === $w - 1 && $bottom === $h - 1);
+
+		// Trim if needed
+		if ($needs_trim)
+		{
+			$trimmed = imagecreatetruecolor($crop_w, $crop_h);
+			imagesavealpha($trimmed, TRUE);
+			imagealphablending($trimmed, FALSE);
+			$transparent = imagecolorallocatealpha($trimmed, 0, 0, 0, 127);
+			imagefill($trimmed, 0, 0, $transparent);
+			imagecopy($trimmed, $src, 0, 0, $left, $top, $crop_w, $crop_h);
+			imagedestroy($src);
+			$src = $trimmed;
+			$w = $crop_w;
+			$h = $crop_h;
+		}
+
+		// Resize if either dimension exceeds max
+		if ($w > $max_dim || $h > $max_dim)
+		{
+			$scale = min($max_dim / $w, $max_dim / $h);
+			$new_w = (int) round($w * $scale);
+			$new_h = (int) round($h * $scale);
+
+			$resized = imagecreatetruecolor($new_w, $new_h);
+			imagesavealpha($resized, TRUE);
+			imagealphablending($resized, FALSE);
+			$transparent = imagecolorallocatealpha($resized, 0, 0, 0, 127);
+			imagefill($resized, 0, 0, $transparent);
+			imagecopyresampled($resized, $src, 0, 0, 0, 0, $new_w, $new_h, $w, $h);
+			imagedestroy($src);
+			$src = $resized;
+			$w = $new_w;
+			$h = $new_h;
+		}
+
+		imagepng($src, $file_path);
+		imagedestroy($src);
+
+		return ['width' => $w, 'height' => $h];
 	}
 }

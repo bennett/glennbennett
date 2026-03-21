@@ -104,12 +104,15 @@
 .skin-blue-light .sidebar-menu .treeview-menu > li > a {
   color: #777777;
 }
-.skin-blue-light .sidebar-menu .treeview-menu > li.active > a,
 .skin-blue-light .sidebar-menu .treeview-menu > li > a:hover {
   color: #000000;
+  background-color: #e7e7e7;
 }
 .skin-blue-light .sidebar-menu .treeview-menu > li.active > a {
+  color: #3c8dbc;
   font-weight: 600;
+  background-color: #e7e7e7;
+  border-left: 9px solid #3c8dbc;
 }
 .skin-blue-light .sidebar-form {
   border-radius: 3px;

@@ -8,20 +8,20 @@
         </a>
     </li>
 
-    <li class="treeview <?php echo in_array($page->menu, ['images', 'venues', 'dup_events']) ? 'active menu-open' : '' ?>">
+    <li class="treeview <?php echo in_array($page->menu, ['venues', 'venue_types', 'dup_events']) ? 'active menu-open' : '' ?>">
         <a href="#">
             <i class="fa fa-calendar"></i> <span>Calendar Tools</span>
             <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
         </a>
         <ul class="treeview-menu">
-            <li <?php echo ($page->menu == 'images') ? 'class="active"' : '' ?>>
-                <a href="<?php echo site_url('admin/images') ?>">
-                    <i class="fa fa-image"></i> <span>Sharing Images</span>
-                </a>
-            </li>
             <li <?php echo ($page->menu == 'venues') ? 'class="active"' : '' ?>>
                 <a href="<?php echo site_url('admin/venues') ?>">
-                    <i class="fa fa-map-marker"></i> <span>Venue Images</span>
+                    <i class="fa fa-map-marker"></i> <span>Venues</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'venue_types') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/venue_types') ?>">
+                    <i class="fa fa-tags"></i> <span>Venue Types</span>
                 </a>
             </li>
             <li <?php echo ($page->menu == 'dup_events') ? 'class="active"' : '' ?>>
@@ -34,7 +34,7 @@
 
     <li class="treeview <?php echo in_array($page->menu, ['template_backgrounds', 'template_photos', 'templates']) ? 'active menu-open' : '' ?>">
         <a href="#">
-            <i class="fa fa-object-group"></i> <span>Share Templates</span>
+            <i class="fa fa-share-square-o"></i> <span>Share Image Management</span>
             <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
         </a>
         <ul class="treeview-menu">
@@ -45,7 +45,7 @@
             </li>
             <li <?php echo ($page->menu == 'template_photos') ? 'class="active"' : '' ?>>
                 <a href="<?php echo site_url('admin/template_photos') ?>">
-                    <i class="fa fa-user"></i> <span>Photos</span>
+                    <i class="fa fa-user"></i> <span>Artist Photos</span>
                 </a>
             </li>
             <li <?php echo ($page->menu == 'templates') ? 'class="active"' : '' ?>>

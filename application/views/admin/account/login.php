@@ -19,11 +19,25 @@
             </div>
         <?php endif; ?>
 
+        <?php $is_local = (strpos($_SERVER['HTTP_HOST'], '.test') !== false); ?>
+
+        <?php if ( ! empty($google_enabled) && ! $is_local): ?>
+            <div class="text-center" style="margin-top: 10px;">
+                <a href="<?php echo site_url('admin/login/google'); ?>" class="btn btn-default btn-block btn-flat">
+                    <i class="fa fa-google"></i> Sign in with Google
+                </a>
+            </div>
+            <div class="text-center" style="margin-top: 15px;">
+                <a href="#" onclick="document.getElementById('manual-login').style.display='block';this.style.display='none';return false;" style="color: #999; font-size: 12px;">Manual login</a>
+            </div>
+        <?php endif; ?>
+
+        <div id="manual-login" <?php if ( ! empty($google_enabled) && ! $is_local) echo 'style="display:none; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;"'; ?>>
         <?php echo form_open('admin/login/check', ['method' => 'POST', 'autocomplete' => 'off']); ?>
 
             <div class="form-group has-feedback">
                 <input type="text" class="form-control" placeholder="Username"
-                       value="<?php echo set_value('username') ?>" name="username" autofocus />
+                       value="<?php echo set_value('username') ?>" name="username" />
                 <span class="fa fa-user form-control-feedback"></span>
                 <?php echo form_error('username', '<div class="text-danger">', '</div>'); ?>
             </div>
@@ -46,14 +60,7 @@
             </div>
 
         <?php echo form_close(); ?>
-
-        <?php if ( ! empty($google_enabled)): ?>
-            <div class="text-center" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                <a href="<?php echo site_url('admin/login/google'); ?>" class="btn btn-default btn-block btn-flat">
-                    <i class="fa fa-google"></i> Sign in with Google
-                </a>
-            </div>
-        <?php endif; ?>
+        </div>
     </div>
 </div>
 

@@ -59,6 +59,13 @@ Public musician portfolio and gig calendar at glennbennett.com. Showcases origin
 | `/admin/dup_events/day?date=` | Select events from a specific date and set a new target date |
 | `/admin/dup_events/generate_csv` | Preview and download the CSV for import into Google Calendar |
 
+### Admin Authentication
+
+- **Production:** Google OAuth ("Sign in with Google") via `Google_auth.php` library — raw cURL, no Composer dependencies
+- **Local dev:** Username/password fallback via `.env` (`ADMIN_USERNAME`/`ADMIN_PASSWORD`)
+- Admin base controller enforces auth on all `/admin/*` routes
+- Credentials stored in `.env` (see `.env.example` for required variables)
+
 ### Internal / Legacy (on production but not actively used)
 
 | URL | Description |

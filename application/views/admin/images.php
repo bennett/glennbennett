@@ -3,7 +3,7 @@
 <?php include VIEWPATH . 'admin/includes/header.php'; ?>
 
 <section class="content-header">
-    <h1>Calendar Images <small>Manage background images</small></h1>
+    <h1>Legacy Calendar Images <small>Old background images (kept for existing links)</small></h1>
 </section>
 
 <section class="content">
@@ -58,22 +58,20 @@
 
                                     <div style="margin-top: 10px;">
                                         <a href="<?php echo site_url('admin/image_layout/' . $image->id) ?>"
-                                           class="btn btn-xs btn-info" title="Edit Layout">
+                                           class="btn btn-sm btn-info">
                                             <i class="fa fa-sliders"></i> Customize
                                         </a>
 
-                                        <button class="btn btn-xs toggle-btn <?php echo $image->is_active ? 'btn-success' : 'btn-default' ?>"
-                                                data-id="<?php echo $image->id ?>"
-                                                title="Toggle Active">
+                                        <button class="btn btn-sm toggle-btn <?php echo $image->is_active ? 'btn-success' : 'btn-default' ?>"
+                                                data-id="<?php echo $image->id ?>">
                                             <i class="fa <?php echo $image->is_active ? 'fa-check-circle' : 'fa-circle-o' ?>"></i>
                                             <?php echo $image->is_active ? 'Active' : 'Inactive' ?>
                                         </button>
 
                                         <a href="<?php echo site_url('admin/delete_image/' . $image->id) ?>"
-                                           class="btn btn-xs btn-danger"
-                                           onclick="return confirm('Delete this image?')"
-                                           title="Delete">
-                                            <i class="fa fa-trash"></i>
+                                           class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Delete this image?')">
+                                            <i class="fa fa-trash"></i> Delete
                                         </a>
                                     </div>
                                 </div>
