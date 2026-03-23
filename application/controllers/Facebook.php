@@ -50,32 +50,47 @@ class Facebook extends CI_Controller {
             }
         }
         
+        $this->load->model('share_image_model');
+
         if($event == null) {
-            redirect('/cal', 'refresh');
+            // Fallback: try loading from share_images DB
+            $stored = $this->share_image_model->get_by_uid($event_id);
+            if (!$stored) {
+                redirect('/cal', 'refresh');
+            }
+
+            $start_date = $stored->start_date;
+            $end_date = $stored->end_date;
+            $summary = $stored->summary;
+            $description = $stored->description ?: '';
+            $location = $stored->location;
+            $share_hash = $stored->hash;
+        } else {
+            $start_date = $event['start_date'];
+            $end_date = $event['end_date'];
+            $summary = $this->string_cleaner($event['summary']);
+            $description = $this->string_cleaner($event['description']);
+            $location = $event['location'];
+
+            $share = $this->share_image_model->find_or_create($summary, $location, $start_date, $end_date, $event['UID'], $description);
+            $share_hash = $share->hash;
         }
-        
-        // Extract relevant data from calendar event
-        $start_date = $event['start_date'];
-        $end_date = $event['end_date'];
-        $summary = $this->string_cleaner($event['summary']);
-        $description = $this->string_cleaner($event['description']);
-        $location = $event['location'];
-        
+
         // Format dates for display
         $week_day = date("l", $start_date);
         $date = date("l - F d", $start_date);
         $time = date("g:i a", $start_date) . " - " . date("g:i a", $end_date);
-        
+
         $actual_link = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
-        
+
         $today = date("Y-m-d");
         $event_day = date("Y-m-d", $start_date);
-        
-        // Build data array for view - now including ALL necessary variables
+
+        // Build data array for view
         $data = array(
             'event_id' => $event_id,
             'start_date' => $start_date,
-            'end_date' => $end_date,  // Added this
+            'end_date' => $end_date,
             'actual_link' => $actual_link,
             'summary' => $summary,
             'description' => $description,
@@ -85,15 +100,12 @@ class Facebook extends CI_Controller {
             'title' => $summary,
             'sub_title' => "$date - $time"
         );
-        
+
         // Calculate date difference
         $this->date_diff->days_diff($today, $event_day);
         $data['date_diff'] = $this->date_diff->days_diff_str($today, $event_day);
 
-        // Generate short URL hash for share image
-        $this->load->model('share_image_model');
-        $share = $this->share_image_model->find_or_create($summary, $location, $start_date, $end_date);
-        $data['share_hash'] = $share->hash;
+        $data['share_hash'] = $share_hash;
 
         // Add OG metadata using og partial with short URL
         $data['og'] = $this->load->view("partials/og.php", $data, true);
