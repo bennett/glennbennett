@@ -1,0 +1,13 @@
+<?php
+// Add uid and description columns to share_images for event fallback lookups
+
+return array(
+    'up' => function($ci) {
+        $ci->db->query("ALTER TABLE share_images ADD COLUMN uid VARCHAR(255) NULL AFTER hash");
+        $ci->db->query("ALTER TABLE share_images ADD COLUMN description TEXT NULL AFTER location");
+    },
+    'down' => function($ci) {
+        $ci->db->query("ALTER TABLE share_images DROP COLUMN uid");
+        $ci->db->query("ALTER TABLE share_images DROP COLUMN description");
+    },
+);
