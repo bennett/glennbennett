@@ -3,7 +3,7 @@
 <?php include VIEWPATH . 'admin/includes/header.php'; ?>
 
 <section class="content-header">
-    <h1><?php echo $venue ? 'Edit' : 'Add' ?> Venue</h1>
+    <h1><?php echo $venue ? 'Edit' : 'Add' ?> Performance Venue</h1>
 </section>
 
 <section class="content">
@@ -18,7 +18,7 @@
 
             <div class="box box-primary">
                 <div class="box-header with-border">
-                    <h3 class="box-title">Venue Details</h3>
+                    <h3 class="box-title">Performance Venue Details</h3>
                 </div>
                 <div class="box-body">
                     <div class="form-group">
@@ -192,7 +192,7 @@
 
             <div class="form-group">
                 <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fa fa-save"></i> Save Venue
+                    <i class="fa fa-save"></i> Save Performance Venue
                 </button>
                 <a href="<?php echo site_url('admin/venues') ?>" class="btn btn-default btn-lg">Cancel</a>
             </div>

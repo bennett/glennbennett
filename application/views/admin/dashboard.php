@@ -33,7 +33,7 @@
             <div class="info-box">
                 <span class="info-box-icon bg-yellow"><i class="fa fa-map-marker"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">Venues</span>
+                    <span class="info-box-text">Performance Venues</span>
                     <span class="info-box-number"><?php echo $venue_count ?></span>
                 </div>
             </div>
@@ -56,11 +56,11 @@
         <div class="col-md-6">
             <div class="box box-warning box-solid">
                 <div class="box-header with-border">
-                    <h3 class="box-title"><i class="fa fa-map-marker"></i> Venues</h3>
+                    <h3 class="box-title"><i class="fa fa-map-marker"></i> Performance Venues</h3>
                 </div>
                 <div class="box-body">
                     <p>Manage venue logos and image assignments for calendar listings.</p>
-                    <a href="<?php echo site_url('admin/venues') ?>" class="btn btn-warning">Manage Venues</a>
+                    <a href="<?php echo site_url('admin/venues') ?>" class="btn btn-warning">Manage Performance Venues</a>
                 </div>
             </div>
         </div>

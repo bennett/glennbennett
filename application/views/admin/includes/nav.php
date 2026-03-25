@@ -16,7 +16,7 @@
         <ul class="treeview-menu">
             <li <?php echo ($page->menu == 'venues') ? 'class="active"' : '' ?>>
                 <a href="<?php echo site_url('admin/venues') ?>">
-                    <i class="fa fa-map-marker"></i> <span>Venues</span>
+                    <i class="fa fa-map-marker"></i> <span>Performance Venues</span>
                 </a>
             </li>
             <li <?php echo ($page->menu == 'venue_types') ? 'class="active"' : '' ?>>

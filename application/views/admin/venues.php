@@ -3,17 +3,23 @@
 <?php include VIEWPATH . 'admin/includes/header.php'; ?>
 
 <section class="content-header">
-    <h1>Venues <small>Manage venue image assignments</small></h1>
+    <h1>Performance Venues <small>Manage performance venue image assignments</small></h1>
 </section>
 
 <section class="content">
 
+    <div class="callout callout-info">
+        <h4>How Performance Venues Work</h4>
+        <p>When a calendar event is shared on social media, the system matches the event title against each venue's <strong>match pattern</strong> to determine which share image templates to use. Each venue can have its own assigned templates, or fall back to templates assigned to its <strong>venue type</strong> (e.g. Winery, Farmers Market). If no match is found, the default template pool is used.</p>
+        <p style="margin-bottom: 0;">Venues can also store a <strong>logo</strong> for display on calendar listings, and optional <strong>logistics</strong> details like drive time, setup time, and address.</p>
+    </div>
+
     <div class="box">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-map-marker"></i> Venues</h3>
+            <h3 class="box-title"><i class="fa fa-map-marker"></i> Performance Venues</h3>
             <div class="box-tools">
                 <a href="<?php echo site_url('admin/venue_edit') ?>" class="btn btn-primary btn-sm">
-                    <i class="fa fa-plus"></i> Add Venue
+                    <i class="fa fa-plus"></i> Add Performance Venue
                 </a>
             </div>
         </div>
