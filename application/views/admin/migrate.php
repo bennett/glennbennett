@@ -17,70 +17,97 @@
     <?php endif; ?>
 
     <?php
-    $has_pending = false;
-    $has_ran = false;
+    $pending = array();
+    $completed = array();
     foreach ($migrations as $m) {
-        if ($m['ran']) $has_ran = true;
-        else $has_pending = true;
+        if ($m['ran']) $completed[] = $m;
+        else $pending[] = $m;
     }
     ?>
 
-    <div class="box">
+    <!-- Pending Migrations -->
+    <div class="box box-primary">
         <div class="box-header with-border">
-            <h3 class="box-title"><i class="fa fa-database"></i> Migrations</h3>
+            <h3 class="box-title"><i class="fa fa-clock-o"></i> Pending Migrations</h3>
+            <?php if (!empty($pending)): ?>
             <div class="box-tools">
-                <form action="<?php echo site_url('migrate/run'); ?>" method="post" style="display: inline-block;" class="mr-2">
+                <form action="<?php echo site_url('migrate/run'); ?>" method="post" style="display: inline-block;">
                     <input type="hidden" name="<?php echo $this->security->get_csrf_token_name(); ?>" value="<?php echo $this->security->get_csrf_hash(); ?>">
-                    <button type="submit" class="btn btn-primary btn-sm" <?php echo $has_pending ? '' : 'disabled'; ?>>
+                    <button type="submit" class="btn btn-primary btn-sm">
                         <i class="fa fa-play"></i> Run Pending Migrations
                     </button>
                 </form>
-                <form action="<?php echo site_url('migrate/rollback'); ?>" method="post" style="display: inline-block;"
-                      onsubmit="return confirm('Roll back the last batch?');">
-                    <input type="hidden" name="<?php echo $this->security->get_csrf_token_name(); ?>" value="<?php echo $this->security->get_csrf_hash(); ?>">
-                    <button type="submit" class="btn btn-warning btn-sm" <?php echo $has_ran ? '' : 'disabled'; ?>>
-                        <i class="fa fa-undo"></i> Rollback Last Batch
-                    </button>
-                </form>
             </div>
+            <?php endif; ?>
         </div>
-        <div class="box-body no-padding">
-            <?php if (empty($migrations)): ?>
-                <p class="text-muted" style="padding: 15px;">No migration files found in <code>database/migrations/</code>.</p>
+        <div class="box-body">
+            <?php if (empty($pending)): ?>
+                <div class="text-center" style="padding: 30px 15px;">
+                    <i class="fa fa-check-circle text-success" style="font-size: 48px;"></i>
+                    <h3 class="text-muted" style="margin-top: 15px;">Nothing to run</h3>
+                    <p class="text-muted">All migrations have been applied.</p>
+                </div>
             <?php else: ?>
                 <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>Migration</th>
-                            <th style="width: 100px;">Status</th>
-                            <th style="width: 80px;">Batch</th>
-                            <th style="width: 180px;">Ran At</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($migrations as $m): ?>
+                        <?php foreach ($pending as $m): ?>
                         <tr>
-                            <td><code><?php echo htmlspecialchars($m['file']); ?></code></td>
-                            <td>
-                                <?php if ($m['ran']): ?>
-                                    <span class="label label-success">Ran</span>
-                                <?php else: ?>
-                                    <span class="label label-warning">Pending</span>
-                                <?php endif; ?>
-                            </td>
-                            <td><?php echo $m['batch'] ? $m['batch'] : '—'; ?></td>
-                            <td><?php echo $m['ran_at'] ? $m['ran_at'] : '—'; ?></td>
+                            <td><code style="color: inherit; background: transparent;"><?php echo htmlspecialchars($m['file']); ?></code></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
             <?php endif; ?>
         </div>
-        <div class="box-footer text-muted small">
-            Migration files: <code>database/migrations/</code> &middot;
-            Tracking table: <code>migrations</code>
+    </div>
+
+    <!-- Completed Migrations -->
+    <?php if (!empty($completed)): ?>
+    <div class="box box-default">
+        <div class="box-header with-border">
+            <h3 class="box-title"><i class="fa fa-check"></i> Completed Migrations</h3>
+            <div class="box-tools">
+                <form action="<?php echo site_url('migrate/rollback'); ?>" method="post" style="display: inline-block;"
+                      onsubmit="return confirm('Roll back the last batch?');">
+                    <input type="hidden" name="<?php echo $this->security->get_csrf_token_name(); ?>" value="<?php echo $this->security->get_csrf_hash(); ?>">
+                    <button type="submit" class="btn btn-warning btn-sm">
+                        <i class="fa fa-undo"></i> Rollback Last Batch
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="box-body no-padding">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Migration</th>
+                        <th style="width: 80px;">Batch</th>
+                        <th style="width: 180px;">Ran At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($completed as $m): ?>
+                    <tr>
+                        <td><code style="color: inherit; background: transparent;"><?php echo htmlspecialchars($m['file']); ?></code></td>
+                        <td><?php echo $m['batch']; ?></td>
+                        <td><?php echo $m['ran_at']; ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
     </div>
+    <?php endif; ?>
+
+    <p class="text-muted small">
+        Migration files: <code>database/migrations/</code> &middot;
+        Tracking table: <code>migrations</code>
+    </p>
 
 </section>
 

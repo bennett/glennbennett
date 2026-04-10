@@ -3,8 +3,11 @@
 
 return array(
     'up' => function($ci) {
-        $ci->db->query("ALTER TABLE `venues` ADD COLUMN `venue_type_id` INT UNSIGNED DEFAULT NULL AFTER `is_active`");
-        $ci->db->query("ALTER TABLE `venues` ADD CONSTRAINT `venues_venue_type_fk` FOREIGN KEY (`venue_type_id`) REFERENCES `venue_types`(`id`) ON DELETE SET NULL");
+        $cols = array_column($ci->db->query("SHOW COLUMNS FROM `venues`")->result_array(), 'Field');
+        if (!in_array('venue_type_id', $cols)) {
+            $ci->db->query("ALTER TABLE `venues` ADD COLUMN `venue_type_id` INT UNSIGNED DEFAULT NULL AFTER `is_active`");
+            $ci->db->query("ALTER TABLE `venues` ADD CONSTRAINT `venues_venue_type_fk` FOREIGN KEY (`venue_type_id`) REFERENCES `venue_types`(`id`) ON DELETE SET NULL");
+        }
     },
     'down' => function($ci) {
         $ci->db->query("ALTER TABLE `venues` DROP FOREIGN KEY `venues_venue_type_fk`");

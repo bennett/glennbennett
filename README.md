@@ -1,4 +1,4 @@
-# Glenn Bennett Website
+# GlennBennett.com Website
 
 Public musician portfolio and gig calendar at glennbennett.com. Showcases original music, lists upcoming live performances, and handles booking inquiries.
 
@@ -344,6 +344,14 @@ If CI3's `system/` folder is ever replaced or updated, **this patch must be reap
 3. Deploy the patched file manually via lftp (it's excluded from normal deploys)
 4. Change `.htaccess` handler to `ea-php83`
 5. Test immediately — if errors appear, revert `.htaccess` to `ea-php72`
+
+## Known Issues
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Flash messages persist across page refreshes | CI3's `flashdata()` doesn't always expire after one request. The session driver sometimes fails to mark flash data for deletion. | After reading flash data, always call `$this->session->unset_userdata('key')` to force-clear it. Applied to Migrate controller; notifications partial in App Kindling already has this fix. |
+| ModSecurity blocks Google OAuth callback | InMotion's ModSecurity WAF flags the long OAuth query strings (auth codes, scopes, redirect URIs) as suspicious, returning 406 errors. | Disable ModSecurity for `glennbennett1.tsgimh.com` and `glennbennett.tsgimh.com` via cPanel → Security → ModSecurity. Cannot be fixed via `.htaccess` — InMotion doesn't allow `SecRuleEngine` directives there (causes 500). |
+| Migrations fail with "Duplicate column/entry" | Schema changes were applied manually before the migration tracker existed, so the tracker thinks they're pending. | All migrations are now idempotent — they check if tables/columns exist before creating them. Safe to re-run. |
 
 ## Local Setup
 

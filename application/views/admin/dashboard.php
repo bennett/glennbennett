@@ -8,6 +8,18 @@
 
 <section class="content">
 
+    <?php if (!empty($pending_migrations)): ?>
+    <div class="alert alert-warning" style="border-left: 4px solid #f39c12; display: flex; align-items: center; justify-content: space-between; padding: 15px 20px;">
+        <div>
+            <i class="fa fa-exclamation-triangle" style="font-size: 20px; margin-right: 10px;"></i>
+            <strong><?php echo $pending_migrations; ?></strong> database <?php echo $pending_migrations === 1 ? 'migration needs' : 'migrations need'; ?> to be run before deploying.
+        </div>
+        <a href="<?php echo site_url('migrate'); ?>" class="btn btn-warning">
+            <i class="fa fa-database"></i> Run Migrations
+        </a>
+    </div>
+    <?php endif; ?>
+
     <div class="row">
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
@@ -31,7 +43,7 @@
 
         <div class="col-md-4 col-sm-6 col-xs-12">
             <div class="info-box">
-                <span class="info-box-icon bg-yellow"><i class="fa fa-map-marker"></i></span>
+                <span class="info-box-icon bg-navy"><i class="fa fa-map-marker"></i></span>
                 <div class="info-box-content">
                     <span class="info-box-text">Performance Venues</span>
                     <span class="info-box-number"><?php echo $venue_count ?></span>
@@ -54,13 +66,13 @@
         </div>
 
         <div class="col-md-6">
-            <div class="box box-warning box-solid">
-                <div class="box-header with-border">
+            <div class="box box-solid" style="border-top-color: #001f3f;">
+                <div class="box-header with-border" style="background-color: #001f3f; color: #fff;">
                     <h3 class="box-title"><i class="fa fa-map-marker"></i> Performance Venues</h3>
                 </div>
                 <div class="box-body">
                     <p>Manage venue logos and image assignments for calendar listings.</p>
-                    <a href="<?php echo site_url('admin/venues') ?>" class="btn btn-warning">Manage Performance Venues</a>
+                    <a href="<?php echo site_url('admin/venues') ?>" class="btn btn-default" style="background-color: #001f3f; color: #fff; border-color: #001f3f;">Manage Performance Venues</a>
                 </div>
             </div>
         </div>

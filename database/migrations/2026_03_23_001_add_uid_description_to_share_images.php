@@ -3,8 +3,13 @@
 
 return array(
     'up' => function($ci) {
-        $ci->db->query("ALTER TABLE share_images ADD COLUMN uid VARCHAR(255) NULL AFTER hash");
-        $ci->db->query("ALTER TABLE share_images ADD COLUMN description TEXT NULL AFTER location");
+        $cols = array_column($ci->db->query("SHOW COLUMNS FROM `share_images`")->result_array(), 'Field');
+        if (!in_array('uid', $cols)) {
+            $ci->db->query("ALTER TABLE share_images ADD COLUMN uid VARCHAR(255) NULL AFTER hash");
+        }
+        if (!in_array('description', $cols)) {
+            $ci->db->query("ALTER TABLE share_images ADD COLUMN description TEXT NULL AFTER location");
+        }
     },
     'down' => function($ci) {
         $ci->db->query("ALTER TABLE share_images DROP COLUMN uid");

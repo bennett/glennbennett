@@ -19,6 +19,10 @@ class Migrate extends Admin_Controller {
         $this->page_data['success'] = $this->session->flashdata('migration_success');
         $this->page_data['error'] = $this->session->flashdata('migration_error');
 
+        // Explicitly clear to prevent sticky flash messages
+        $this->session->unset_userdata('migration_success');
+        $this->session->unset_userdata('migration_error');
+
         $this->load->view('admin/migrate', $this->page_data);
     }
 

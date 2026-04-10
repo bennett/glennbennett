@@ -15,6 +15,8 @@ return array(
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3
         ");
 
+        if ($ci->db->count_all('venue_types') > 0) return;
+
         $ci->db->insert_batch('venue_types', array(
             array('name' => 'General', 'slug' => 'general', 'sort_order' => 0),
             array('name' => 'Farmers Market', 'slug' => 'farmers-market', 'sort_order' => 1),

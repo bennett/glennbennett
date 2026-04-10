@@ -3,31 +3,36 @@
 
 return array(
     'up' => function($ci) {
+        // Helper to check if column exists
+        $has_col = function($table, $col) use ($ci) {
+            $cols = array_column($ci->db->query("SHOW COLUMNS FROM `{$table}`")->result_array(), 'Field');
+            return in_array($col, $cols);
+        };
 
         // --- templates table ---
-
-        // Status flags
-        $ci->db->query("ALTER TABLE `templates` ADD COLUMN `is_ready` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
-        $ci->db->query("ALTER TABLE `templates` ADD COLUMN `is_orphaned` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_ready`");
-
-        // Name
-        $ci->db->query("ALTER TABLE `templates` ADD COLUMN `name` VARCHAR(255) DEFAULT NULL AFTER `photo_id`");
-
-        // Image adjustments
-        $ci->db->query("
-            ALTER TABLE `templates`
-                ADD COLUMN `brightness` INT DEFAULT 0 AFTER `photo_glow_color`,
-                ADD COLUMN `contrast` INT DEFAULT 0 AFTER `brightness`,
-                ADD COLUMN `saturation` INT DEFAULT 0 AFTER `contrast`,
-                ADD COLUMN `sharpen` INT UNSIGNED DEFAULT 0 AFTER `saturation`,
-                ADD COLUMN `blur` INT UNSIGNED DEFAULT 0 AFTER `sharpen`,
-                ADD COLUMN `opacity` INT UNSIGNED DEFAULT 100 AFTER `blur`,
-                ADD COLUMN `sepia` TINYINT(1) DEFAULT 0 AFTER `opacity`,
-                ADD COLUMN `grayscale` TINYINT(1) DEFAULT 0 AFTER `sepia`,
-                ADD COLUMN `hue_rotate` INT DEFAULT 0 AFTER `grayscale`,
-                ADD COLUMN `tint_color` VARCHAR(7) DEFAULT NULL AFTER `hue_rotate`,
-                ADD COLUMN `tint_amount` INT UNSIGNED DEFAULT 0 AFTER `tint_color`
-        ");
+        if (!$has_col('templates', 'is_ready')) {
+            $ci->db->query("ALTER TABLE `templates` ADD COLUMN `is_ready` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
+            $ci->db->query("ALTER TABLE `templates` ADD COLUMN `is_orphaned` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_ready`");
+        }
+        if (!$has_col('templates', 'name')) {
+            $ci->db->query("ALTER TABLE `templates` ADD COLUMN `name` VARCHAR(255) DEFAULT NULL AFTER `photo_id`");
+        }
+        if (!$has_col('templates', 'brightness')) {
+            $ci->db->query("
+                ALTER TABLE `templates`
+                    ADD COLUMN `brightness` INT DEFAULT 0 AFTER `photo_glow_color`,
+                    ADD COLUMN `contrast` INT DEFAULT 0 AFTER `brightness`,
+                    ADD COLUMN `saturation` INT DEFAULT 0 AFTER `contrast`,
+                    ADD COLUMN `sharpen` INT UNSIGNED DEFAULT 0 AFTER `saturation`,
+                    ADD COLUMN `blur` INT UNSIGNED DEFAULT 0 AFTER `sharpen`,
+                    ADD COLUMN `opacity` INT UNSIGNED DEFAULT 100 AFTER `blur`,
+                    ADD COLUMN `sepia` TINYINT(1) DEFAULT 0 AFTER `opacity`,
+                    ADD COLUMN `grayscale` TINYINT(1) DEFAULT 0 AFTER `sepia`,
+                    ADD COLUMN `hue_rotate` INT DEFAULT 0 AFTER `grayscale`,
+                    ADD COLUMN `tint_color` VARCHAR(7) DEFAULT NULL AFTER `hue_rotate`,
+                    ADD COLUMN `tint_amount` INT UNSIGNED DEFAULT 0 AFTER `tint_color`
+            ");
+        }
 
         // Set default names from bg + photo names
         $ci->db->query("
@@ -39,53 +44,53 @@ return array(
         ");
 
         // --- template_photos table ---
-
-        // has_defaults flag
-        $ci->db->query("ALTER TABLE `template_photos` ADD COLUMN `has_defaults` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
-
-        // Image adjustments
-        $ci->db->query("
-            ALTER TABLE `template_photos`
-                ADD COLUMN `brightness` INT DEFAULT 0 AFTER `photo_glow_color`,
-                ADD COLUMN `contrast` INT DEFAULT 0 AFTER `brightness`,
-                ADD COLUMN `saturation` INT DEFAULT 0 AFTER `contrast`,
-                ADD COLUMN `sharpen` INT UNSIGNED DEFAULT 0 AFTER `saturation`,
-                ADD COLUMN `blur` INT UNSIGNED DEFAULT 0 AFTER `sharpen`,
-                ADD COLUMN `opacity` INT UNSIGNED DEFAULT 100 AFTER `blur`,
-                ADD COLUMN `sepia` TINYINT(1) DEFAULT 0 AFTER `opacity`,
-                ADD COLUMN `grayscale` TINYINT(1) DEFAULT 0 AFTER `sepia`,
-                ADD COLUMN `hue_rotate` INT DEFAULT 0 AFTER `grayscale`,
-                ADD COLUMN `tint_color` VARCHAR(7) DEFAULT NULL AFTER `hue_rotate`,
-                ADD COLUMN `tint_amount` INT UNSIGNED DEFAULT 0 AFTER `tint_color`
-        ");
-
-        // Text positioning defaults
-        $ci->db->query("
-            ALTER TABLE `template_photos`
-                ADD COLUMN `text_offset` INT NOT NULL DEFAULT -200 AFTER `tint_amount`,
-                ADD COLUMN `summary_margin_top` INT NOT NULL DEFAULT 0 AFTER `text_offset`,
-                ADD COLUMN `summary_font_size` INT UNSIGNED NOT NULL DEFAULT 36 AFTER `summary_margin_top`,
-                ADD COLUMN `date_font_size` INT UNSIGNED NOT NULL DEFAULT 24 AFTER `summary_font_size`,
-                ADD COLUMN `date_margin_top` INT NOT NULL DEFAULT 25 AFTER `date_font_size`,
-                ADD COLUMN `time_font_size` INT UNSIGNED NOT NULL DEFAULT 36 AFTER `date_margin_top`,
-                ADD COLUMN `time_margin_top` INT NOT NULL DEFAULT 25 AFTER `time_font_size`,
-                ADD COLUMN `location_font_size` INT UNSIGNED NOT NULL DEFAULT 24 AFTER `time_margin_top`,
-                ADD COLUMN `location_margin_top` INT NOT NULL DEFAULT 25 AFTER `location_font_size`,
-                ADD COLUMN `font_color` VARCHAR(7) NOT NULL DEFAULT '#ffffff' AFTER `location_margin_top`,
-                ADD COLUMN `glow_radius` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `font_color`,
-                ADD COLUMN `glow_color` VARCHAR(7) NOT NULL DEFAULT '#ffffff' AFTER `glow_radius`,
-                ADD COLUMN `shadow_offset` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `glow_color`,
-                ADD COLUMN `stroke_width` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `shadow_offset`,
-                ADD COLUMN `stroke_color` VARCHAR(7) NOT NULL DEFAULT '#000000' AFTER `stroke_width`
-        ");
+        if (!$has_col('template_photos', 'has_defaults')) {
+            $ci->db->query("ALTER TABLE `template_photos` ADD COLUMN `has_defaults` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
+        }
+        if (!$has_col('template_photos', 'brightness')) {
+            $ci->db->query("
+                ALTER TABLE `template_photos`
+                    ADD COLUMN `brightness` INT DEFAULT 0 AFTER `photo_glow_color`,
+                    ADD COLUMN `contrast` INT DEFAULT 0 AFTER `brightness`,
+                    ADD COLUMN `saturation` INT DEFAULT 0 AFTER `contrast`,
+                    ADD COLUMN `sharpen` INT UNSIGNED DEFAULT 0 AFTER `saturation`,
+                    ADD COLUMN `blur` INT UNSIGNED DEFAULT 0 AFTER `sharpen`,
+                    ADD COLUMN `opacity` INT UNSIGNED DEFAULT 100 AFTER `blur`,
+                    ADD COLUMN `sepia` TINYINT(1) DEFAULT 0 AFTER `opacity`,
+                    ADD COLUMN `grayscale` TINYINT(1) DEFAULT 0 AFTER `sepia`,
+                    ADD COLUMN `hue_rotate` INT DEFAULT 0 AFTER `grayscale`,
+                    ADD COLUMN `tint_color` VARCHAR(7) DEFAULT NULL AFTER `hue_rotate`,
+                    ADD COLUMN `tint_amount` INT UNSIGNED DEFAULT 0 AFTER `tint_color`
+            ");
+        }
+        if (!$has_col('template_photos', 'text_offset')) {
+            $ci->db->query("
+                ALTER TABLE `template_photos`
+                    ADD COLUMN `text_offset` INT NOT NULL DEFAULT -200 AFTER `tint_amount`,
+                    ADD COLUMN `summary_margin_top` INT NOT NULL DEFAULT 0 AFTER `text_offset`,
+                    ADD COLUMN `summary_font_size` INT UNSIGNED NOT NULL DEFAULT 36 AFTER `summary_margin_top`,
+                    ADD COLUMN `date_font_size` INT UNSIGNED NOT NULL DEFAULT 24 AFTER `summary_font_size`,
+                    ADD COLUMN `date_margin_top` INT NOT NULL DEFAULT 25 AFTER `date_font_size`,
+                    ADD COLUMN `time_font_size` INT UNSIGNED NOT NULL DEFAULT 36 AFTER `date_margin_top`,
+                    ADD COLUMN `time_margin_top` INT NOT NULL DEFAULT 25 AFTER `time_font_size`,
+                    ADD COLUMN `location_font_size` INT UNSIGNED NOT NULL DEFAULT 24 AFTER `time_margin_top`,
+                    ADD COLUMN `location_margin_top` INT NOT NULL DEFAULT 25 AFTER `location_font_size`,
+                    ADD COLUMN `font_color` VARCHAR(7) NOT NULL DEFAULT '#ffffff' AFTER `location_margin_top`,
+                    ADD COLUMN `glow_radius` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `font_color`,
+                    ADD COLUMN `glow_color` VARCHAR(7) NOT NULL DEFAULT '#ffffff' AFTER `glow_radius`,
+                    ADD COLUMN `shadow_offset` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `glow_color`,
+                    ADD COLUMN `stroke_width` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `shadow_offset`,
+                    ADD COLUMN `stroke_color` VARCHAR(7) NOT NULL DEFAULT '#000000' AFTER `stroke_width`
+            ");
+        }
 
         // Mark existing photos as having defaults
         $ci->db->query("UPDATE `template_photos` SET `has_defaults` = 1");
 
         // --- template_backgrounds table ---
-
-        // has_defaults flag
-        $ci->db->query("ALTER TABLE `template_backgrounds` ADD COLUMN `has_defaults` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
+        if (!$has_col('template_backgrounds', 'has_defaults')) {
+            $ci->db->query("ALTER TABLE `template_backgrounds` ADD COLUMN `has_defaults` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_active`");
+        }
 
         // Mark existing backgrounds as having defaults
         $ci->db->query("UPDATE `template_backgrounds` SET `has_defaults` = 1");

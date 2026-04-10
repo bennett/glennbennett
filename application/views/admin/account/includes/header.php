@@ -8,7 +8,8 @@
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
 
     <link rel="stylesheet" href="<?php echo $assets ?>bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/v4-shims.min.css">
     <link rel="stylesheet" href="<?php echo $assets ?>plugins/Ionicons/css/ionicons.min.css">
     <link rel="stylesheet" href="<?php echo $assets ?>css/app.css">
 

@@ -26,6 +26,9 @@ class Admin extends Admin_Controller {
 		$this->page_data['active_image_count'] = $this->cal_image_model->countActive();
 		$this->page_data['venue_count'] = $this->venue_model->countAll();
 
+		$this->load->library('migration_runner');
+		$this->page_data['pending_migrations'] = $this->migration_runner->pending_count();
+
 		$this->load->view('admin/dashboard', $this->page_data);
 	}
 

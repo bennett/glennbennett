@@ -166,6 +166,18 @@ class Migration_runner {
     }
 
     /**
+     * Get the number of pending migrations.
+     *
+     * @return int
+     */
+    public function pending_count()
+    {
+        $files = $this->get_files();
+        $ran = $this->get_ran();
+        return count(array_diff($files, $ran));
+    }
+
+    /**
      * Get status of all migrations.
      *
      * @return array Each element: ['file' => name, 'ran' => bool, 'batch' => int|null, 'ran_at' => string|null]
