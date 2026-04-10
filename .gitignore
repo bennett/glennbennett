@@ -22,6 +22,17 @@ php-error.log
 /songs/
 /Listen/
 
+# Template Images (uploaded via admin)
+/imgs/template-backgrounds/
+/imgs/template-photos/
+/imgs/template-cache/
+
+# Data exports
+events.csv
+
+# Installers
+*.dmg
+
 # Backups
 /backups/
 *.zip
