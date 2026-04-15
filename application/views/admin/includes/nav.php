@@ -56,6 +56,25 @@
         </ul>
     </li>
 
+    <li class="treeview <?php echo in_array($page->menu, ['promo_builder', 'promo_images']) ? 'active menu-open' : '' ?>">
+        <a href="#">
+            <i class="fa fa-magic"></i> <span>AI Promo Builder</span>
+            <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span>
+        </a>
+        <ul class="treeview-menu">
+            <li <?php echo ($page->menu == 'promo_builder') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/promo') ?>">
+                    <i class="fa fa-magic"></i> <span>Promo Builder</span>
+                </a>
+            </li>
+            <li <?php echo ($page->menu == 'promo_images') ? 'class="active"' : '' ?>>
+                <a href="<?php echo site_url('admin/promo/images') ?>">
+                    <i class="fa fa-images"></i> <span>Image Library</span>
+                </a>
+            </li>
+        </ul>
+    </li>
+
     <li class="header">TOOLS</li>
 
     <li <?php echo ($page->menu == 'migrate') ? 'class="active"' : '' ?>>

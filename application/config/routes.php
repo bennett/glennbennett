@@ -73,6 +73,8 @@ $route['admin/login/google_callback'] = 'admin_login/google_callback';
 $route['admin/dup_events'] = 'admin_dup/index';
 $route['admin/dup_events/day'] = 'admin_dup/day';
 $route['admin/dup_events/generate_csv'] = 'admin_dup/generate_csv';
+$route['admin/promo'] = 'admin_promo/index';
+$route['admin/promo/(:any)'] = 'admin_promo/$1';
 $route['admin/(:any)'] = 'admin/$1';
 
 // Tools
