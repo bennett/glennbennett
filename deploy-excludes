@@ -1,0 +1,20 @@
+# Project-specific deploy exclusions for glennbennett.com
+# Merged with ~/.lftp/exclude-list via deploy.conf EXTRA_EXCLUDE_FILE.
+
+# Shared with music.glennbennett.com — don't touch on the server
+songs/
+imgs/cal/
+
+# Server-only — keep the server copy, not in git
+enom-api/
+
+# Runtime state / generated data — server owns these
+events.csv
+gcal/php-error.log
+php-error.log
+
+# Abandoned site-builder assets — not actively managed either way
+imgs/template-backgrounds/
+imgs/template-cache/
+imgs/template-photos/
+one-page/
